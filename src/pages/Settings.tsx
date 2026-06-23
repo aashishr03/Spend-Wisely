@@ -17,11 +17,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile, useUsageLimits, useSubscription, useUpgradePlan } from '@/hooks/useFinance';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Crown, Mic, Camera, Brain, LogOut, Trash2, User } from 'lucide-react';
+import { Crown, Mic, Camera, Brain, LogOut, Trash2, User, GraduationCap } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const SettingsPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { data: profile } = useProfile();
   const { data: usage } = useUsageLimits();
   const { data: subscription } = useSubscription();
