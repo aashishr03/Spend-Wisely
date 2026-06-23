@@ -36,6 +36,7 @@ const AppContent = () => {
         <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
         <Route path="/invest" element={<ProtectedRoute><Invest /></ProtectedRoute>} />
         <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
+        <Route path="/mentor" element={<ProtectedRoute><Mentor /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
