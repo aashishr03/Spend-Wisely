@@ -165,6 +165,30 @@ const SettingsPage = () => {
 
         <Card className="glass-card">
           <CardContent className="p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <GraduationCap className="h-5 w-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-medium text-sm">Student Mode</p>
+                  <p className="text-xs text-muted-foreground">Unlock student categories & insights (pocket money, semester fees, certs)</p>
+                </div>
+              </div>
+              <Switch
+                checked={!!profile?.student_mode}
+                onCheckedChange={async (next) => {
+                  const { error } = await supabase.from('profiles').update({ student_mode: next }).eq('id', user!.id);
+                  if (error) return toast.error('Failed to update');
+                  toast.success(next ? '🎓 Student Mode on' : 'Student Mode off');
+                  qc.invalidateQueries({ queryKey: ['profile'] });
+                  qc.invalidateQueries({ queryKey: ['mentor'] });
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-sm">Dark Mode</p>
@@ -174,6 +198,7 @@ const SettingsPage = () => {
             </div>
           </CardContent>
         </Card>
+
 
         <Separator />
 
