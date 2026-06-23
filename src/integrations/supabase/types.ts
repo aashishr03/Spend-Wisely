@@ -163,6 +163,48 @@ export type Database = {
         }
         Relationships: []
       }
+      mentor_challenges: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          saved_amount: number
+          started_at: string
+          status: string
+          target_savings: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          saved_amount?: number
+          started_at?: string
+          status?: string
+          target_savings?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          saved_amount?: number
+          started_at?: string
+          status?: string
+          target_savings?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -196,6 +238,45 @@ export type Database = {
           student_mode?: boolean
           trial_ends_at?: string | null
           trial_started_at?: string | null
+        }
+        Relationships: []
+      }
+      savings_goals: {
+        Row: {
+          category: string
+          created_at: string
+          icon_key: string
+          id: string
+          name: string
+          saved_amount: number
+          target_amount: number
+          target_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          icon_key?: string
+          id?: string
+          name: string
+          saved_amount?: number
+          target_amount?: number
+          target_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          icon_key?: string
+          id?: string
+          name?: string
+          saved_amount?: number
+          target_amount?: number
+          target_date?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

@@ -149,7 +149,10 @@ Data:
 - Top categories: ${categoryPredictions.slice(0, 3).map(c => `${c.category} ₹${c.spent}`).join(", ")}
 - Spending growth vs last month: ${growth.toFixed(1)}%
 
-Reply with ONLY 4 concise bullet points (with emojis) — personalized coaching tips. No preamble.`;
+STRICT RULES:
+- DO NOT name any specific bank, credit card, mutual fund, stock, app, broker, or financial product.
+- Only give GENERIC behavioural guidance (e.g. "reduce subscriptions", "build an emergency fund", "save for certifications", "save for semester fees", "improve savings rate").
+- Reply with ONLY 4 concise bullet points (with emojis), each one short. No preamble, no disclaimers.`;
 
       try {
         const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
