@@ -171,6 +171,7 @@ export type Database = {
           full_name: string | null
           id: string
           plan_type: Database["public"]["Enums"]["plan_type"]
+          student_mode: boolean
           trial_ends_at: string | null
           trial_started_at: string | null
         }
@@ -181,6 +182,7 @@ export type Database = {
           full_name?: string | null
           id: string
           plan_type?: Database["public"]["Enums"]["plan_type"]
+          student_mode?: boolean
           trial_ends_at?: string | null
           trial_started_at?: string | null
         }
@@ -191,6 +193,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           plan_type?: Database["public"]["Enums"]["plan_type"]
+          student_mode?: boolean
           trial_ends_at?: string | null
           trial_started_at?: string | null
         }
