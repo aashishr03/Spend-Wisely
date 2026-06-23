@@ -44,21 +44,21 @@ const allocations: Record<string, { name: string; value: number; color: string }
 
 const sipPlans: Record<string, { name: string; amount: number }[]> = {
   low: [
-    { name: 'Nifty 50 Index Fund', amount: 0.4 },
-    { name: 'Bank FD / RD', amount: 0.25 },
+    { name: 'Index Fund SIP', amount: 0.4 },
+    { name: 'Recurring Deposit', amount: 0.25 },
     { name: 'Gold ETF', amount: 0.15 },
     { name: 'Liquid Fund', amount: 0.2 },
   ],
   medium: [
-    { name: 'Nifty 50 Index Fund', amount: 0.4 },
-    { name: 'Large Cap Fund', amount: 0.25 },
+    { name: 'Index Fund SIP', amount: 0.4 },
+    { name: 'Large-Cap Equity', amount: 0.25 },
     { name: 'Gold ETF', amount: 0.1 },
     { name: 'Liquid Fund', amount: 0.25 },
   ],
   high: [
-    { name: 'Flexi Cap Fund', amount: 0.35 },
-    { name: 'Mid-Cap Fund', amount: 0.3 },
-    { name: 'Small Cap Fund', amount: 0.2 },
+    { name: 'Flexi-Cap Equity', amount: 0.35 },
+    { name: 'Mid-Cap Equity', amount: 0.3 },
+    { name: 'Small-Cap Equity', amount: 0.2 },
     { name: 'Gold ETF', amount: 0.15 },
   ],
 };
