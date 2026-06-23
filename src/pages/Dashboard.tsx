@@ -9,6 +9,7 @@ import { downloadReportPDF } from '@/lib/generateReport';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AppLayout } from '@/components/AppLayout';
+import { MentorPredictionsCard } from '@/components/MentorPredictionsCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { useTransactions, useDeleteTransaction, useAccounts } from '@/hooks/useFinance';
@@ -233,6 +234,8 @@ const Dashboard = () => {
             </Card>
           </div>
         )}
+
+        <MentorPredictionsCard />
 
         <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
           {/* Pie Chart */}

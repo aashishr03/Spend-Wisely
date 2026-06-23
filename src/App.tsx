@@ -13,6 +13,7 @@ import AddTransaction from "./pages/AddTransaction";
 import Budgets from "./pages/Budgets";
 import Invest from "./pages/Invest";
 import Insights from "./pages/Insights";
+import Mentor from "./pages/Mentor";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const AppContent = () => {
         <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
         <Route path="/invest" element={<ProtectedRoute><Invest /></ProtectedRoute>} />
         <Route path="/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
+        <Route path="/mentor" element={<ProtectedRoute><Mentor /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
