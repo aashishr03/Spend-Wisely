@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, Plus, Wallet, TrendingUp, Settings, Menu, X, DollarSign, Sparkles,
+  LayoutDashboard, Plus, Wallet, TrendingUp, Settings, Menu, X, DollarSign, Sparkles, Brain,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/add-transaction', icon: Plus, label: 'Add' },
   { to: '/budgets', icon: Wallet, label: 'Budgets' },
+  { to: '/mentor', icon: Brain, label: 'Mentor' },
   { to: '/insights', icon: Sparkles, label: 'Insights' },
   { to: '/invest', icon: TrendingUp, label: 'Invest' },
   { to: '/settings', icon: Settings, label: 'Settings' },
