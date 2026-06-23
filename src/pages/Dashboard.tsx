@@ -234,6 +234,8 @@ const Dashboard = () => {
           </div>
         )}
 
+        <MentorPredictionsCard />
+
         <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
           {/* Pie Chart */}
           <Card className="glass-card lg:col-span-1">
