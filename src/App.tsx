@@ -13,6 +13,7 @@ import AddTransaction from "./pages/AddTransaction";
 import Budgets from "./pages/Budgets";
 import Invest from "./pages/Invest";
 import Insights from "./pages/Insights";
+import Mentor from "./pages/Mentor";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
