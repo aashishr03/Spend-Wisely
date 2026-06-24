@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -6,18 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { AppLayout } from '@/components/AppLayout';
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile, useUsageLimits, useSubscription, useUpgradePlan } from '@/hooks/useFinance';
+import { useProfile } from '@/hooks/useFinance';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Crown, Mic, Camera, Brain, LogOut, Trash2, User, GraduationCap } from 'lucide-react';
+import { Crown, LogOut, Trash2, User, GraduationCap, RotateCcw, Sparkles } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
 const SettingsPage = () => {
@@ -25,11 +25,7 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: profile } = useProfile();
-  const { data: usage } = useUsageLimits();
-  const { data: subscription } = useSubscription();
-  const upgradePlan = useUpgradePlan();
-  
-  // Initialize dark mode from current DOM state, not from a hook that auto-applies
+
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const [fullName, setFullName] = useState('');
 
@@ -37,63 +33,31 @@ const SettingsPage = () => {
     setIsDark(prev => {
       const next = !prev;
       const root = document.documentElement;
-      if (next) {
-        root.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        root.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-      }
+      if (next) { root.classList.add('dark'); localStorage.setItem('theme', 'dark'); }
+      else { root.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
       return next;
     });
   };
-
-  const isPremium = profile?.plan_type === 'premium';
 
   const handleUpdateName = async () => {
     if (!fullName.trim()) return;
     const { error } = await supabase.from('profiles').update({ full_name: fullName }).eq('id', user!.id);
     if (error) toast.error('Failed to update');
-    else toast.success('Name updated!');
+    else { toast.success('Name updated'); qc.invalidateQueries({ queryKey: ['profile'] }); }
   };
 
-  const handleUpgrade = async () => {
-    try {
-      await upgradePlan.mutateAsync();
-      toast.success('🎉 Upgraded to Premium!');
-    } catch {
-      toast.error('Upgrade failed');
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    await signOut();
-    navigate('/auth');
-    toast.success('Account deleted');
-  };
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/auth');
-  };
-
-  const usageItems = [
-    { label: 'Voice Entries', icon: Mic, used: usage?.voice_entries_used ?? 0, limit: isPremium ? '∞' : '5' },
-    { label: 'Receipt Scans', icon: Camera, used: usage?.receipt_scans_used ?? 0, limit: isPremium ? '∞' : '5' },
-    { label: 'AI Queries', icon: Brain, used: usage?.ai_premium_queries_used ?? 0, limit: isPremium ? '∞' : '10' },
-  ];
+  const handleLogout = async () => { await signOut(); navigate('/auth'); };
+  const handleDelete = async () => { await signOut(); navigate('/auth'); toast.success('Signed out'); };
 
   return (
     <AppLayout>
       <div className="mx-auto max-w-2xl space-y-6">
         <h1 className="font-heading text-2xl font-bold">Settings</h1>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle className="font-heading text-lg flex items-center gap-2">
-                <User className="h-5 w-5" /> Profile
-              </CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2"><User className="h-5 w-5" /> Profile</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -103,11 +67,7 @@ const SettingsPage = () => {
               <div className="space-y-2">
                 <Label>Full Name</Label>
                 <div className="flex gap-2">
-                  <Input
-                    placeholder={profile?.full_name || 'Your name'}
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
+                  <Input placeholder={profile?.full_name || 'Your name'} value={fullName} onChange={(e) => setFullName(e.target.value)} />
                   <Button variant="outline" onClick={handleUpdateName}>Save</Button>
                 </div>
               </div>
@@ -115,90 +75,63 @@ const SettingsPage = () => {
           </Card>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className={isPremium ? 'glass-card border-primary/30' : 'glass-card'}>
-            <CardHeader>
-              <CardTitle className="font-heading text-lg flex items-center gap-2">
-                <Crown className={`h-5 w-5 ${isPremium ? 'text-warning' : ''}`} />
-                {isPremium ? 'Premium Plan' : 'Free Plan'}
-              </CardTitle>
-              <CardDescription>
-                {isPremium
-                  ? `Active until ${subscription?.expires_at ? new Date(subscription.expires_at).toLocaleDateString() : 'N/A'}`
-                  : 'Upgrade for unlimited features'}
-              </CardDescription>
-            </CardHeader>
-            {!isPremium && (
-              <CardContent>
-                <Button onClick={handleUpgrade} className="w-full gradient-primary" disabled={upgradePlan.isPending}>
-                  <Crown className="mr-2 h-4 w-4" />
-                  {upgradePlan.isPending ? 'Upgrading...' : 'Upgrade to Premium — ₹799/mo'}
-                </Button>
-              </CardContent>
-            )}
-          </Card>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="font-heading text-lg">Usage This Month</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {usageItems.map(({ label, icon: Icon, used, limit }) => (
-                <div key={label} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
-                      <span>{label}</span>
-                    </div>
-                    <span className="font-medium">{used} / {limit}</span>
-                  </div>
-                  {!isPremium && (
-                    <Progress value={(used / Number(limit)) * 100} className="h-1.5" />
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </motion.div>
-
+        {/* Persona / Student Mode */}
         <Card className="glass-card">
-          <CardContent className="p-5">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary" /> Persona</CardTitle>
+            <CardDescription>
+              Currently: <Badge variant="outline" className="ml-1">{profile?.student_mode ? 'Student' : 'Working Professional'}</Badge>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <GraduationCap className="h-5 w-5 text-primary mt-0.5" />
-                <div>
-                  <p className="font-medium text-sm">Student Mode</p>
-                  <p className="text-xs text-muted-foreground">Unlock student categories & insights (pocket money, semester fees, certs)</p>
-                </div>
+              <div>
+                <p className="font-medium text-sm">Student Mode</p>
+                <p className="text-xs text-muted-foreground">
+                  Switches goals, categories, AI coaching tone, and investment options to student-focused.
+                </p>
               </div>
               <Switch
                 checked={!!profile?.student_mode}
                 onCheckedChange={async (next) => {
                   const { error } = await supabase.from('profiles').update({ student_mode: next }).eq('id', user!.id);
                   if (error) return toast.error('Failed to update');
-                  toast.success(next ? '🎓 Student Mode on' : 'Student Mode off');
+                  toast.success(next ? '🎓 Student Mode on' : 'Working Professional mode');
                   qc.invalidateQueries({ queryKey: ['profile'] });
-                  qc.invalidateQueries({ queryKey: ['mentor'] });
                 }}
               />
             </div>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/onboarding')}>
+              <RotateCcw className="h-4 w-4 mr-2" /> Re-run onboarding
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Premium — coming soon (no fake purchase) */}
+        <Card className="glass-card border-dashed">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Crown className="h-5 w-5 text-warning" /> Premium — Coming Soon
+            </CardTitle>
+            <CardDescription>Real payments aren't enabled yet. Here's what's planned:</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-1.5 text-sm text-muted-foreground">
+            <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Unlimited AI Coach queries</p>
+            <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Unlimited voice & receipt entries</p>
+            <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Advanced wealth projections</p>
+            <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Multi-account & shared family budgets</p>
           </CardContent>
         </Card>
 
         <Card className="glass-card">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-sm">Dark Mode</p>
-                <p className="text-xs text-muted-foreground">Toggle dark theme</p>
-              </div>
-              <Switch checked={isDark} onCheckedChange={toggleTheme} />
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="font-medium text-sm">Dark Mode</p>
+              <p className="text-xs text-muted-foreground">Toggle dark theme</p>
             </div>
+            <Switch checked={isDark} onCheckedChange={toggleTheme} />
           </CardContent>
         </Card>
-
 
         <Separator />
 
@@ -206,7 +139,6 @@ const SettingsPage = () => {
           <Button variant="outline" onClick={handleLogout} className="w-full">
             <LogOut className="mr-2 h-4 w-4" /> Log Out
           </Button>
-
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" className="w-full text-destructive hover:text-destructive">
@@ -216,15 +148,11 @@ const SettingsPage = () => {
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete all your data. This action cannot be undone.
-                </AlertDialogDescription>
+                <AlertDialogDescription>This signs you out. To fully purge your data, contact support.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground">
-                  Delete
-                </AlertDialogAction>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

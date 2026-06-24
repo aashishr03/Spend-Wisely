@@ -211,8 +211,14 @@ export type Database = {
           created_at: string
           currency: string
           full_name: string | null
+          goal_horizon: string | null
           id: string
+          investment_experience: string | null
+          monthly_income: number | null
+          onboarding_completed: boolean
+          persona_age: number | null
           plan_type: Database["public"]["Enums"]["plan_type"]
+          risk_appetite: number | null
           student_mode: boolean
           trial_ends_at: string | null
           trial_started_at: string | null
@@ -222,8 +228,14 @@ export type Database = {
           created_at?: string
           currency?: string
           full_name?: string | null
+          goal_horizon?: string | null
           id: string
+          investment_experience?: string | null
+          monthly_income?: number | null
+          onboarding_completed?: boolean
+          persona_age?: number | null
           plan_type?: Database["public"]["Enums"]["plan_type"]
+          risk_appetite?: number | null
           student_mode?: boolean
           trial_ends_at?: string | null
           trial_started_at?: string | null
@@ -233,8 +245,14 @@ export type Database = {
           created_at?: string
           currency?: string
           full_name?: string | null
+          goal_horizon?: string | null
           id?: string
+          investment_experience?: string | null
+          monthly_income?: number | null
+          onboarding_completed?: boolean
+          persona_age?: number | null
           plan_type?: Database["public"]["Enums"]["plan_type"]
+          risk_appetite?: number | null
           student_mode?: boolean
           trial_ends_at?: string | null
           trial_started_at?: string | null
