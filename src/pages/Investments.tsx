@@ -129,17 +129,18 @@ const Investments = () => {
           </Button>
         </div>
 
-        {/* Profile snapshot */}
+        {/* Profile snapshot — all 5 onboarding inputs */}
         <Card className="glass-card">
-          <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <CardContent className="p-4 grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
             <div><p className="text-xs text-muted-foreground">Age</p><p className="font-medium">{profile?.persona_age ?? '—'}</p></div>
             <div><p className="text-xs text-muted-foreground">Monthly Income</p><p className="font-medium">{profile?.monthly_income ? formatINR(Number(profile.monthly_income)) : '—'}</p></div>
             <div><p className="text-xs text-muted-foreground">Risk Appetite</p><p className="font-medium">{profile?.risk_appetite}/5</p></div>
-            <div><p className="text-xs text-muted-foreground">Goal Horizon</p><p className="font-medium capitalize">{profile?.goal_horizon}</p></div>
+            <div><p className="text-xs text-muted-foreground">Experience</p><p className="font-medium capitalize">{profile?.investment_experience ?? '—'}</p></div>
+            <div><p className="text-xs text-muted-foreground">Goal Horizon</p><p className="font-medium capitalize">{profile?.goal_horizon ?? '—'}</p></div>
           </CardContent>
         </Card>
 
-        {/* Risk + rationale */}
+        {/* Risk + rationale (now references the user's actual inputs) */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="glass-card">
             <CardContent className="p-5 flex items-start gap-4">
@@ -154,6 +155,11 @@ const Investments = () => {
                 <p className="text-sm text-muted-foreground mt-1">
                   <span className="font-medium text-foreground/80">Why:</span> {meta.rationale}
                 </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Based on your inputs: risk appetite <b>{profile?.risk_appetite}/5</b>, <b>{profile?.investment_experience}</b> experience,
+                  {' '}<b>{profile?.goal_horizon}</b> horizon{profile?.persona_age ? <>, age <b>{profile.persona_age}</b></> : null}
+                  {profile?.student_mode ? ' (student adjustment applied)' : ''}.
+                </p>
                 {!computed && !invest && (
                   <Button size="sm" className="mt-3" onClick={async () => {
                     await upsert.mutateAsync({ risk_level: risk, monthly_investment_amount: recommendedAmount, goals: profile?.goal_horizon || 'medium' });
@@ -166,6 +172,46 @@ const Investments = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Future value projection */}
+        {(() => {
+          const horizonYears = profile?.goal_horizon === 'short' ? 2 : profile?.goal_horizon === 'long' ? 10 : 5;
+          // expected annual return by risk (beginner-friendly conservative estimates)
+          const annualReturn = risk === 'low' ? 0.07 : risk === 'medium' ? 0.10 : 0.12;
+          const months = horizonYears * 12;
+          const r = annualReturn / 12;
+          // Future value of an ordinary SIP
+          const futureValue = monthly > 0 ? monthly * ((Math.pow(1 + r, months) - 1) / r) * (1 + r) : 0;
+          const invested = monthly * months;
+          const gains = futureValue - invested;
+          return (
+            <Card className="glass-card">
+              <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Suggested Monthly</p>
+                  <p className="font-heading text-lg font-bold">{formatINR(monthly)}</p>
+                  <p className="text-[11px] text-muted-foreground">~25% of your monthly income</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Horizon</p>
+                  <p className="font-heading text-lg font-bold">{horizonYears} yrs</p>
+                  <p className="text-[11px] text-muted-foreground">from your goal horizon</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">You'd Invest</p>
+                  <p className="font-heading text-lg font-bold">{formatINR(invested)}</p>
+                  <p className="text-[11px] text-muted-foreground">{months} monthly contributions</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Estimated Value</p>
+                  <p className="font-heading text-lg font-bold text-success">{formatINR(futureValue)}</p>
+                  <p className="text-[11px] text-muted-foreground">+{formatINR(gains)} at ~{Math.round(annualReturn*100)}%/yr (illustrative)</p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
 
         {/* Allocation w/ why */}
         <div className="grid lg:grid-cols-2 gap-4">
