@@ -44,7 +44,7 @@ export const HealthScoreCard = ({ data }: { data: HealthBreakdown }) => {
             <div className="flex-1 w-full space-y-2">
               <Badge variant="outline" className={tone(data.status)}>{data.status}</Badge>
               <TooltipProvider>
-                <div className="space-y-2 mt-2">
+                <div className="space-y-2.5 mt-2">
                   {data.parts.map(p => (
                     <div key={p.key}>
                       <div className="flex items-center justify-between text-xs">
@@ -64,6 +64,7 @@ export const HealthScoreCard = ({ data }: { data: HealthBreakdown }) => {
                         </span>
                       </div>
                       <Progress value={(p.earned / p.max) * 100} className="h-1 mt-1" />
+                      <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{p.why}</p>
                     </div>
                   ))}
                 </div>
