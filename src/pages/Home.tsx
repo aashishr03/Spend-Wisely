@@ -121,12 +121,40 @@ const Home = () => {
     return <Navigate to="/onboarding" replace />;
   }
 
+  // Storytelling subtext per card
+  const balanceDelta = savings; // net flow this month
+  const expensePctOfIncome = income > 0 ? Math.round((expense / income) * 100) : 0;
+  const savingsRate = income > 0 ? Math.round((savings / income) * 100) : 0;
+  const hasSalary = txs.some(t => t.type === 'income' && /salary|stipend|pocket/i.test(t.description || ''));
+
   const stats = [
-    { label: 'Current Balance', value: balance, icon: Wallet, gradient: 'gradient-hero' },
-    { label: 'Monthly Income', value: income, icon: TrendingUp, gradient: 'gradient-income' },
-    { label: 'Monthly Expenses', value: expense, icon: TrendingDown, gradient: 'gradient-expense' },
-    { label: 'Savings This Month', value: savings, icon: PiggyBank, gradient: 'gradient-primary' },
+    {
+      label: 'Current Balance', value: balance, icon: Wallet, gradient: 'gradient-hero',
+      sub: balanceDelta !== 0 && income > 0
+        ? `${balanceDelta >= 0 ? '↑' : '↓'} ${balanceDelta >= 0 ? '+' : '-'}${formatINR(balanceDelta)} this month`
+        : 'No movement this month',
+    },
+    {
+      label: 'Monthly Income', value: income, icon: TrendingUp, gradient: 'gradient-income',
+      sub: income > 0 ? (hasSalary ? 'Salary received' : `${txs.filter(t => t.type === 'income').length} income entries`) : 'Add your first income',
+    },
+    {
+      label: 'Monthly Expenses', value: expense, icon: TrendingDown, gradient: 'gradient-expense',
+      sub: income > 0 && expense > 0 ? `${expensePctOfIncome}% of income` : expense > 0 ? `${txs.filter(t => t.type === 'expense').length} expenses logged` : 'Nothing spent yet',
+    },
+    {
+      label: 'Savings This Month', value: savings, icon: PiggyBank, gradient: 'gradient-primary',
+      sub: income > 0 ? `${savingsRate}% savings rate` : 'Log income to see rate',
+    },
   ];
+
+  // Personalized one-line summary
+  const topGoalSummary = goals.find(g => Number(g.saved_amount) < Number(g.target_amount));
+  const goalPct = topGoalSummary ? Math.round((Number(topGoalSummary.saved_amount) / Number(topGoalSummary.target_amount)) * 100) : 0;
+  const riskLabel = invest?.risk_level === 'low' ? 'Conservative' : invest?.risk_level === 'high' ? 'Growth-Oriented' : invest?.risk_level === 'medium' ? 'Moderate' : null;
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+  const firstName = profile?.full_name?.split(' ')[0];
 
   return (
     <AppLayout>
@@ -135,7 +163,7 @@ const Home = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-heading text-2xl font-bold">
-                Hi{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''} 👋
+                {greet}{firstName ? `, ${firstName}` : ''} 👋
               </h1>
               {profile?.student_mode ? (
                 <Badge variant="outline" className="text-primary border-primary/30">
@@ -154,22 +182,50 @@ const Home = () => {
           </Button>
         </div>
 
-        {/* 4 cards exactly */}
+        {/* Personalized AI narrative */}
+        {(income > 0 || topGoalSummary || riskLabel) && (
+          <Card className="glass-card border-primary/20">
+            <CardContent className="p-4 space-y-1 text-sm">
+              {income > 0 && (
+                <p>
+                  This month you saved <span className="font-semibold text-success">{savingsRate}%</span> of your income
+                  {savingsRate >= 20 ? ' — strong pace.' : savingsRate >= 10 ? ' — solid, aim for 20%+.' : ' — let\'s improve this.'}
+                </p>
+              )}
+              {topGoalSummary && (
+                <p>
+                  You're <span className="font-semibold">{goalPct}%</span> of the way to your <span className="font-semibold">{topGoalSummary.name}</span>.
+                </p>
+              )}
+              {riskLabel && (
+                <p>Your investment profile remains <span className="font-semibold">{riskLabel}</span>.</p>
+              )}
+              {actions[0] && (
+                <p className="pt-1 border-t border-border/40 mt-2">
+                  <span className="text-primary font-medium">Today's suggestion: </span>{actions[0].title}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 4 cards with story subtext */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {isLoading
-            ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[100px] rounded-xl" />)
-            : stats.map(({ label, value, icon: Icon, gradient }, i) => (
+            ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[110px] rounded-xl" />)
+            : stats.map(({ label, value, icon: Icon, gradient, sub }, i) => (
               <motion.div key={label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
                 <Card className={`${gradient} text-primary-foreground border-0 overflow-hidden`}>
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
                         <p className="text-xs opacity-80 truncate">{label}</p>
                         <p className="font-heading text-xl font-bold mt-1 truncate">
                           {value < 0 ? '-' : ''}{formatINR(value)}
                         </p>
+                        <p className="text-[11px] opacity-80 mt-1 truncate">{sub}</p>
                       </div>
-                      <Icon className="h-7 w-7 opacity-40 shrink-0" />
+                      <Icon className="h-6 w-6 opacity-40 shrink-0" />
                     </div>
                   </CardContent>
                 </Card>

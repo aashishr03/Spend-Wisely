@@ -94,19 +94,29 @@ const SettingsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Premium — coming soon (no fake purchase) */}
+        {/* Premium Beta — waitlist */}
         <Card className="glass-card border-dashed">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Crown className="h-5 w-5 text-warning" /> Premium — Coming Soon
+              <Crown className="h-5 w-5 text-warning" /> Premium Beta
+              <Badge variant="outline" className="ml-1 text-warning border-warning/40">Launching Soon</Badge>
             </CardTitle>
-            <CardDescription>Real payments aren't enabled yet. Here's what's planned:</CardDescription>
+            <CardDescription>Early access to advanced AI coaching & projections.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-1.5 text-sm text-muted-foreground">
-            <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Unlimited AI Coach queries</p>
-            <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Unlimited voice & receipt entries</p>
-            <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Advanced wealth projections</p>
-            <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Multi-account & shared family budgets</p>
+          <CardContent className="space-y-3">
+            <div className="space-y-1.5 text-sm text-muted-foreground">
+              <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Unlimited AI Coach queries</p>
+              <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Unlimited voice & receipt entries</p>
+              <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Advanced wealth projections</p>
+              <p className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary" /> Multi-account & shared family budgets</p>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full border-warning/40 text-warning hover:bg-warning/10"
+              onClick={() => toast.success("You're on the waitlist! We'll email you when Premium Beta opens.")}
+            >
+              <Crown className="h-4 w-4 mr-2" /> Join Waitlist
+            </Button>
           </CardContent>
         </Card>
 

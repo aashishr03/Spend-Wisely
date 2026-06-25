@@ -132,9 +132,23 @@ const Investments = () => {
         {/* Profile snapshot — all 5 onboarding inputs */}
         <Card className="glass-card">
           <CardContent className="p-4 grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-            <div><p className="text-xs text-muted-foreground">Age</p><p className="font-medium">{profile?.persona_age ?? '—'}</p></div>
-            <div><p className="text-xs text-muted-foreground">Monthly Income</p><p className="font-medium">{profile?.monthly_income ? formatINR(Number(profile.monthly_income)) : '—'}</p></div>
-            <div><p className="text-xs text-muted-foreground">Risk Appetite</p><p className="font-medium">{profile?.risk_appetite}/5</p></div>
+            <div>
+              <p className="text-xs text-muted-foreground">Age</p>
+              <p className="font-medium">
+                {profile?.persona_age ? profile.persona_age : (
+                  <Link to="/onboarding" className="text-primary text-xs underline">Add via onboarding</Link>
+                )}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Monthly Income</p>
+              <p className="font-medium">
+                {profile?.monthly_income ? formatINR(Number(profile.monthly_income)) : (
+                  <Link to="/onboarding" className="text-primary text-xs underline">Add via onboarding</Link>
+                )}
+              </p>
+            </div>
+            <div><p className="text-xs text-muted-foreground">Risk Appetite</p><p className="font-medium">{profile?.risk_appetite ?? '—'}/5</p></div>
             <div><p className="text-xs text-muted-foreground">Experience</p><p className="font-medium capitalize">{profile?.investment_experience ?? '—'}</p></div>
             <div><p className="text-xs text-muted-foreground">Goal Horizon</p><p className="font-medium capitalize">{profile?.goal_horizon ?? '—'}</p></div>
           </CardContent>
@@ -264,6 +278,59 @@ const Investments = () => {
                   ))}
                 </div>
               </TooltipProvider>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Expected Risk / Return / Tips */}
+        <div className="grid md:grid-cols-3 gap-4">
+          <Card className="glass-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Shield className="h-4 w-4 text-info" /> Expected Risk
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <p className="text-lg font-bold">
+                {risk === 'low' ? 'Low' : risk === 'medium' ? 'Moderate' : 'High'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {risk === 'low'
+                  ? 'Small drawdowns (5–10%) possible. Capital protection prioritized.'
+                  : risk === 'medium'
+                  ? 'Moderate swings (10–20%) expected. Balanced equity + safety.'
+                  : 'Larger swings (20–35%) possible. Higher long-term potential.'}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="glass-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-success" /> Expected Return
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <p className="text-lg font-bold text-success">
+                ~{risk === 'low' ? '7' : risk === 'medium' ? '10' : '12'}% / year
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Historical long-term averages for this allocation. Not guaranteed — markets fluctuate.
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="glass-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" /> Investment Tips
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="text-xs text-muted-foreground space-y-1.5">
+                <li>• Start small, automate monthly contributions.</li>
+                <li>• Don't react to short-term news — stay invested.</li>
+                <li>• Rebalance once a year to keep your allocation on target.</li>
+                <li>• Build a 3–6 month emergency fund before investing aggressively.</li>
+              </ul>
             </CardContent>
           </Card>
         </div>
