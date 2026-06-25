@@ -75,7 +75,7 @@ const SettingsPage = () => {
           </Card>
         </motion.div>
 
-        {/* Persona / Student Mode */}
+        {/* Persona */}
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary" /> Persona</CardTitle>
@@ -83,26 +83,13 @@ const SettingsPage = () => {
               Currently: <Badge variant="outline" className="ml-1">{profile?.student_mode ? 'Student' : 'Working Professional'}</Badge>
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="font-medium text-sm">Student Mode</p>
-                <p className="text-xs text-muted-foreground">
-                  Switches goals, categories, AI coaching tone, and investment options to student-focused.
-                </p>
-              </div>
-              <Switch
-                checked={!!profile?.student_mode}
-                onCheckedChange={async (next) => {
-                  const { error } = await supabase.from('profiles').update({ student_mode: next }).eq('id', user!.id);
-                  if (error) return toast.error('Failed to update');
-                  toast.success(next ? '🎓 Student Mode on' : 'Working Professional mode');
-                  qc.invalidateQueries({ queryKey: ['profile'] });
-                }}
-              />
-            </div>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Persona controls your dashboard suggestions, goal templates, AI coaching tone, and investment recommendations.
+              Re-run onboarding to switch personas — changes apply immediately across the app.
+            </p>
             <Button variant="outline" className="w-full" onClick={() => navigate('/onboarding')}>
-              <RotateCcw className="h-4 w-4 mr-2" /> Re-run onboarding
+              <RotateCcw className="h-4 w-4 mr-2" /> Change Persona — re-run onboarding
             </Button>
           </CardContent>
         </Card>
