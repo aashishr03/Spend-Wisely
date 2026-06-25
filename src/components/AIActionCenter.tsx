@@ -24,9 +24,14 @@ export const AIActionCenter = ({ actions }: { actions: AIAction[] }) => {
         </CardHeader>
         <CardContent className="space-y-3">
           {top.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Add a few transactions — your AI Coach will surface actions here.
-            </p>
+            <div className="space-y-2 text-sm">
+              <p className="text-muted-foreground">No personalized actions yet. Get started with:</p>
+              <ul className="space-y-1.5 text-xs">
+                <li className="flex items-start gap-2"><span className="text-primary">•</span><span><span className="font-medium text-foreground">Log a few transactions</span> — your Coach analyzes patterns to spot waste.</span></li>
+                <li className="flex items-start gap-2"><span className="text-primary">•</span><span><span className="font-medium text-foreground">Set a monthly budget</span> — discipline points unlock and we alert on breaches.</span></li>
+                <li className="flex items-start gap-2"><span className="text-primary">•</span><span><span className="font-medium text-foreground">Create one savings goal</span> — we'll compute pace, monthly contribution & ETA.</span></li>
+              </ul>
+            </div>
           ) : top.map(a => (
             <div key={a.id} className="rounded-lg border border-border bg-card/40 p-3 space-y-2">
               <p className="text-sm font-medium leading-snug">{a.title}</p>
