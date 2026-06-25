@@ -36,17 +36,25 @@ serve(async (req) => {
       const firstOfLastMonth = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, "0")}-01`;
       const lastOfLastMonth = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, "0")}-${String(lastMonth.getDate()).padStart(2, "0")}`;
 
-      const [currentRes, lastRes, accountsRes, categoriesRes] = await Promise.all([
+      const [currentRes, lastRes, accountsRes, categoriesRes, profileRes, goalsRes, investRes, budgetsRes] = await Promise.all([
         supabase.from("transactions").select("*, categories(name)").eq("user_id", user.id).gte("date", firstOfMonth).order("date", { ascending: false }),
         supabase.from("transactions").select("*, categories(name)").eq("user_id", user.id).gte("date", firstOfLastMonth).lte("date", lastOfLastMonth),
         supabase.from("accounts").select("*").eq("user_id", user.id),
         supabase.from("categories").select("*"),
+        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+        supabase.from("savings_goals").select("*").eq("user_id", user.id),
+        supabase.from("investment_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase.from("budgets").select("*, categories(name)").eq("user_id", user.id),
       ]);
 
       const currentTx = currentRes.data || [];
       const lastTx = lastRes.data || [];
       const accounts = accountsRes.data || [];
       const categories = categoriesRes.data || [];
+      const profile = profileRes.data;
+      const goals = goalsRes.data || [];
+      const invest = investRes.data;
+      const budgets = budgetsRes.data || [];
 
       for (const cat of categories) {
         categoryMap[cat.name.toLowerCase()] = cat.id;
@@ -59,6 +67,7 @@ serve(async (req) => {
       const thisMonthIncome = currentTx.filter((t: any) => t.type === "income").reduce((s: number, t: any) => s + t.amount, 0);
       const thisMonthExpense = currentTx.filter((t: any) => t.type === "expense").reduce((s: number, t: any) => s + t.amount, 0);
       const lastMonthExpense = lastTx.filter((t: any) => t.type === "expense").reduce((s: number, t: any) => s + t.amount, 0);
+      const savingsRate = thisMonthIncome > 0 ? Math.round(((thisMonthIncome - thisMonthExpense) / thisMonthIncome) * 100) : 0;
 
       const categorySpending: Record<string, number> = {};
       currentTx.filter((t: any) => t.type === "expense").forEach((t: any) => {
@@ -72,27 +81,49 @@ serve(async (req) => {
         .join(", ");
 
       const availableCategories = categories.map((c: any) => `${c.name} (${c.type})`).join(", ");
+      const persona = profile?.student_mode ? "Student" : "Working Professional";
+      const goalsStr = goals.length
+        ? goals.map((g: any) => `${g.name}: ₹${Number(g.saved_amount).toFixed(0)}/₹${Number(g.target_amount).toFixed(0)}`).join("; ")
+        : "none";
+      const budgetsStr = budgets.length
+        ? budgets.map((b: any) => `${b.categories?.name || "?"} limit ₹${Number(b.monthly_limit).toFixed(0)}`).join("; ")
+        : "none";
 
       transactionContext = `
-USER'S FINANCIAL DATA:
+USER PROFILE:
+- Persona: ${persona}
+- Age: ${profile?.persona_age ?? "unknown"}
+- Stated monthly income: ${profile?.monthly_income ? `₹${profile.monthly_income}` : "unknown"}
+- Risk appetite: ${profile?.risk_appetite ?? "?"}/5
+- Investment experience: ${profile?.investment_experience ?? "unknown"}
+- Goal horizon: ${profile?.goal_horizon ?? "unknown"}
+- Investment profile saved: ${invest ? `risk=${invest.risk_level}, monthly=₹${invest.monthly_investment_amount ?? 0}` : "not set"}
+
+USER'S FINANCIAL DATA (this month unless noted):
 - Total Balance: ₹${totalBalance.toFixed(0)}
-- This Month Income: ₹${thisMonthIncome.toFixed(0)}
-- This Month Expenses: ₹${thisMonthExpense.toFixed(0)}
-- Last Month Expenses: ₹${lastMonthExpense.toFixed(0)}
-- Category Breakdown: ${catBreakdown || "No expenses yet"}
-- Transactions this month: ${currentTx.length}
-- Recent: ${currentTx.slice(0, 5).map((t: any) => `${t.type} ₹${t.amount} (${t.categories?.name || "N/A"}) on ${t.date}`).join("; ") || "None"}
-- Available categories: ${availableCategories}
+- Income: ₹${thisMonthIncome.toFixed(0)}
+- Expenses: ₹${thisMonthExpense.toFixed(0)} (last month: ₹${lastMonthExpense.toFixed(0)})
+- Savings rate this month: ${savingsRate}%
+- Category breakdown: ${catBreakdown || "No expenses yet"}
+- Active savings goals: ${goalsStr}
+- Budgets set: ${budgetsStr}
+- Recent transactions: ${currentTx.slice(0, 5).map((t: any) => `${t.type} ₹${t.amount} (${t.categories?.name || "N/A"}) on ${t.date}`).join("; ") || "None"}
+- Available categories for logging: ${availableCategories}
 `;
     }
 
-    const systemPrompt = `You are "Spend Wisely AI", a concise personal finance assistant. Currency is Indian Rupees (₹).
+    const systemPrompt = `You are "Spend Wisely AI", a concise personal finance coach. Currency is Indian Rupees (₹).
 
-RESPONSE STYLE — CRITICAL:
-- Keep responses SHORT and STRUCTURED
-- Use bullet points and line breaks
-- Never write long paragraphs
-- Use emojis sparingly (1-2 per response)
+CRITICAL RULES:
+- ALWAYS ground every recommendation in the user's actual data above. Reference real numbers from their transactions, goals, budgets, or profile.
+- NEVER give generic textbook advice (e.g., "save 20% of income"). Instead say: "Your savings rate is X% this month — here's why and what to do."
+- EVERY recommendation must include a **Why:** line explaining what data drove it (e.g., "Why: Food spending is ₹4,200 vs ₹2,800 last month").
+- If the user has no data on a topic, say so plainly and ask one specific question to fill the gap.
+- Tailor tone to persona: ${"${persona placeholder handled via context above}"}.
+
+RESPONSE STYLE:
+- Short and structured. Use bullet points and line breaks. No long paragraphs.
+- 1-2 emojis max per response.
 - For transaction logging, use this exact format:
 
 **Expense Logged ✅**
@@ -101,9 +132,9 @@ RESPONSE STYLE — CRITICAL:
 • Date: Today
 • Remaining Balance: ₹[balance]
 
-_[One-line insight about this category]_
+_[One-line insight grounded in their category history]_
 
-For general questions, respond in 2-3 short bullet points max.
+For general questions, respond in 2-4 short bullets with a Why line per recommendation.
 
 TRANSACTION LOGGING:
 When the user mentions earning or spending money, extract it and add a JSON block at the END:
