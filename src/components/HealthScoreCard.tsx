@@ -71,6 +71,35 @@ export const HealthScoreCard = ({ data }: { data: HealthBreakdown }) => {
               </TooltipProvider>
             </div>
           </div>
+
+          {/* Actionable next steps — lowest-scoring parts first */}
+          {data.total < 100 && (
+            <div className="mt-5 pt-4 border-t border-border/50">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                Improve your score
+              </p>
+              <ul className="space-y-1.5 text-sm">
+                {[...data.parts]
+                  .filter(p => p.earned < p.max)
+                  .sort((a, b) => (a.earned / a.max) - (b.earned / b.max))
+                  .slice(0, 4)
+                  .map(p => {
+                    const action =
+                      p.key === 'savings' ? 'Increase savings rate by cutting one expense category'
+                      : p.key === 'budget' ? 'Create a monthly budget for your top spend category'
+                      : p.key === 'goals' ? 'Add to or finish one savings goal'
+                      : p.key === 'consistency' ? 'Keep spending within ±10% of last month'
+                      : 'Set up your investment profile';
+                    return (
+                      <li key={p.key} className="flex items-start gap-2">
+                        <span className="text-primary mt-0.5">→</span>
+                        <span><span className="font-medium">{action}</span> <span className="text-muted-foreground text-xs">(+{p.max - p.earned} pts)</span></span>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
