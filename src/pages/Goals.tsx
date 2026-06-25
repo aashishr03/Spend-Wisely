@@ -98,6 +98,14 @@ const GoalsPage = () => {
     const Icon = iconFor(g.icon_key);
     const monthsLeft = monthlySavings > 0 ? Math.ceil(remaining / monthlySavings) : null;
     const done = saved >= targetAmt;
+    // Monthly contribution suggestion: hit goal in 12 months (or by target_date if set)
+    let suggestedMonths = 12;
+    if (g.target_date) {
+      const months = Math.max(1, Math.round((new Date(g.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30)));
+      suggestedMonths = months;
+    }
+    const suggestedMonthly = Math.ceil(remaining / suggestedMonths);
+    const quickAmounts = profile?.student_mode ? [200, 500, 1000] : [1000, 2500, 5000];
 
     return (
       <Card key={g.id} className="glass-card">
@@ -136,21 +144,33 @@ const GoalsPage = () => {
             <Progress value={pct} className="h-1.5" />
           </div>
           {!done && (
-            <div className="flex items-center gap-2">
-              <Input
-                type="number" placeholder="Add saved ₹" className="h-8 text-sm"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const v = Number((e.target as HTMLInputElement).value);
-                    if (v > 0) {
-                      updateGoal.mutate({ id: g.id, saved_amount: saved + v });
-                      (e.target as HTMLInputElement).value = '';
+            <>
+              <div className="rounded-md bg-muted/40 px-2.5 py-1.5 text-xs">
+                <span className="text-muted-foreground">Suggested contribution: </span>
+                <span className="font-semibold text-foreground">{formatINR(suggestedMonthly)}/mo</span>
+                <span className="text-muted-foreground"> to finish in ~{suggestedMonths} mo</span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {quickAmounts.map(q => (
+                  <Button key={q} size="sm" variant="outline" className="h-7 text-xs"
+                    onClick={() => updateGoal.mutate({ id: g.id, saved_amount: saved + q })}>
+                    +{formatINR(q)}
+                  </Button>
+                ))}
+                <Input
+                  type="number" placeholder="Custom ₹" className="h-7 text-xs flex-1 min-w-[90px]"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const v = Number((e.target as HTMLInputElement).value);
+                      if (v > 0) {
+                        updateGoal.mutate({ id: g.id, saved_amount: saved + v });
+                        (e.target as HTMLInputElement).value = '';
+                      }
                     }
-                  }
-                }}
-              />
-              <span className="text-xs text-muted-foreground whitespace-nowrap">Press Enter</span>
-            </div>
+                  }}
+                />
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
