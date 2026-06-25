@@ -72,6 +72,7 @@ const GoalsPage = () => {
   const [openCustom, setOpenCustom] = useState(false);
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
+  const [targetDate, setTargetDate] = useState('');
 
   const handlePreset = async (p: typeof STUDENT_PRESETS[number]) => {
     if (goals.some(g => g.name === p.name)) {
@@ -85,8 +86,8 @@ const GoalsPage = () => {
   const handleCreate = async () => {
     const t = Number(target);
     if (!name.trim() || !t || t <= 0) return toast.error('Enter a name and target');
-    await addGoal.mutateAsync({ name: name.trim(), target_amount: t });
-    setName(''); setTarget(''); setOpenCustom(false);
+    await addGoal.mutateAsync({ name: name.trim(), target_amount: t, target_date: targetDate || null });
+    setName(''); setTarget(''); setTargetDate(''); setOpenCustom(false);
     toast.success('Goal created');
   };
 
@@ -135,7 +136,7 @@ const GoalsPage = () => {
                 </Badge>
               ) : monthsLeft !== null ? (
                 <span className="text-muted-foreground">
-                  Est. ~{monthsLeft} mo at current pace
+                  ~{monthsLeft} mo at current pace
                 </span>
               ) : (
                 <span className="text-muted-foreground">Add income to estimate</span>
@@ -145,6 +146,29 @@ const GoalsPage = () => {
           </div>
           {!done && (
             <>
+              {/* Target date • Current pace • Expected finish */}
+              <div className="grid grid-cols-3 gap-2 text-[11px]">
+                <div className="rounded-md bg-muted/30 p-2">
+                  <p className="text-muted-foreground">Target date</p>
+                  <p className="font-semibold text-foreground">
+                    {g.target_date ? format(new Date(g.target_date), 'MMM yyyy') : '—'}
+                  </p>
+                </div>
+                <div className="rounded-md bg-muted/30 p-2">
+                  <p className="text-muted-foreground">Current pace</p>
+                  <p className="font-semibold text-foreground">
+                    {monthlySavings > 0 ? `${formatINR(monthlySavings)}/mo` : '—'}
+                  </p>
+                </div>
+                <div className="rounded-md bg-muted/30 p-2">
+                  <p className="text-muted-foreground">Expected finish</p>
+                  <p className="font-semibold text-foreground">
+                    {monthsLeft !== null
+                      ? format(new Date(now.getFullYear(), now.getMonth() + monthsLeft, 1), 'MMM yyyy')
+                      : '—'}
+                  </p>
+                </div>
+              </div>
               <div className="rounded-md bg-muted/40 px-2.5 py-1.5 text-xs">
                 <span className="text-muted-foreground">Suggested contribution: </span>
                 <span className="font-semibold text-foreground">{formatINR(suggestedMonthly)}/mo</span>
@@ -205,6 +229,10 @@ const GoalsPage = () => {
                 <div className="space-y-1">
                   <Label>Target amount (₹)</Label>
                   <Input type="number" value={target} onChange={e => setTarget(e.target.value)} placeholder="50000" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Target date <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} />
                 </div>
               </div>
               <DialogFooter>
