@@ -38,10 +38,6 @@ const Home = () => {
   const { data: goals = [] } = useGoals();
   const { data: invest } = useInvestmentProfile();
 
-  // Redirect to onboarding if not completed
-  if (!profileLoading && profile && !profile.onboarding_completed) {
-    return <Navigate to="/onboarding" replace />;
-  }
 
   const income = txs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
   const expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
@@ -120,6 +116,10 @@ const Home = () => {
 
     return list;
   }, [income, expense, lastExpense, budgets, spentByCat, goals, savings]);
+
+  if (!profileLoading && profile && !profile.onboarding_completed) {
+    return <Navigate to="/onboarding" replace />;
+  }
 
   const stats = [
     { label: 'Current Balance', value: balance, icon: Wallet, gradient: 'gradient-hero' },
