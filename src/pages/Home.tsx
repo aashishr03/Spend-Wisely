@@ -117,6 +117,10 @@ const Home = () => {
     return list;
   }, [income, expense, lastExpense, budgets, spentByCat, goals, savings]);
 
+  if (!profileLoading && profile && !profile.onboarding_completed) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   const stats = [
     { label: 'Current Balance', value: balance, icon: Wallet, gradient: 'gradient-hero' },
     { label: 'Monthly Income', value: income, icon: TrendingUp, gradient: 'gradient-income' },
