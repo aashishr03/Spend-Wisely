@@ -84,7 +84,7 @@ const GoalsPage = () => {
   const [target, setTarget] = useState('');
   const [targetDate, setTargetDate] = useState('');
 
-  const handlePreset = async (p: typeof STUDENT_PRESETS[number]) => {
+  const handlePreset = async (p: typeof UNIVERSAL_PRESETS[number]) => {
     if (goals.some(g => g.name === p.name)) {
       toast.info('Goal already exists');
       return;
