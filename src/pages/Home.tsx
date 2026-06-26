@@ -57,10 +57,9 @@ const Home = () => {
 
   const health = useMemo(() => computeHealthScore({
     income, expense, lastMonthExpense: lastExpense,
-    budgets: budgets.map(b => ({ limit: Number(b.monthly_limit), spent: spentByCat.get(b.category_id) || 0 })),
     goals: goals.map(g => ({ target: Number(g.target_amount), saved: Number(g.saved_amount) })),
-    hasInvestmentProfile: !!invest,
-  }), [income, expense, lastExpense, budgets, spentByCat, goals, invest]);
+    hasInvestmentSetup: !!invest,
+  }), [income, expense, lastExpense, goals, invest]);
 
   // AI actions — max 3, transparent why
   const actions = useMemo<AIAction[]>(() => {
