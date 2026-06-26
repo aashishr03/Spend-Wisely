@@ -75,24 +75,45 @@ const SettingsPage = () => {
           </Card>
         </motion.div>
 
-        {/* Persona */}
+        {/* Financial Profile */}
         <Card className="glass-card">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary" /> Persona</CardTitle>
-            <CardDescription>
-              Currently: <Badge variant="outline" className="ml-1">{profile?.student_mode ? 'Student' : 'Working Professional'}</Badge>
-            </CardDescription>
+            <CardTitle className="text-lg flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary" /> Financial Profile</CardTitle>
+            <CardDescription>What we use across the dashboard, goals, AI coach, and investments.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Persona controls your dashboard suggestions, goal templates, AI coaching tone, and investment recommendations.
-              Re-run onboarding to switch personas — changes apply immediately across the app.
-            </p>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Primary Goal</p>
+                <p className="font-medium capitalize">{((profile as any)?.primary_goal || '—').toString().replace(/_/g, ' ')}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Money Source</p>
+                <p className="font-medium capitalize">{((profile as any)?.money_source || '—').toString().replace(/_/g, ' ')}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Monthly Money Received</p>
+                <p className="font-medium">{profile?.monthly_income ? `₹${Number(profile.monthly_income).toLocaleString('en-IN')}` : 'Not provided'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Risk Appetite</p>
+                <p className="font-medium">{profile?.risk_appetite ? `${profile.risk_appetite}/5` : '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Investment Experience</p>
+                <p className="font-medium capitalize">{profile?.investment_experience || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Goal Horizon</p>
+                <p className="font-medium capitalize">{profile?.goal_horizon || '—'}</p>
+              </div>
+            </div>
             <Button variant="outline" className="w-full" onClick={() => navigate('/onboarding')}>
-              <RotateCcw className="h-4 w-4 mr-2" /> Change Persona — re-run onboarding
+              <RotateCcw className="h-4 w-4 mr-2" /> Update Financial Profile
             </Button>
           </CardContent>
         </Card>
+
 
         {/* Premium Beta — waitlist */}
         <Card className="glass-card border-dashed">
