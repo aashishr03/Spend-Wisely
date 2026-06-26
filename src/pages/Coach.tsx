@@ -18,16 +18,13 @@ type SavedConvo = { id: string; title: string; updatedAt: number; messages: Msg[
 const STORAGE_KEY = 'spend-wisely:coach-conversation';
 const HISTORY_KEY = 'spend-wisely:coach-history';
 
-const buildSuggestions = (student: boolean) => student ? [
-  'Where did my pocket money go this week?',
-  'How can I save ₹2,000 for my certification?',
-  'Am I on track for my Placement Fund?',
-  'Give me 3 cuts I can make to save more.',
-] : [
+const DEFAULT_SUGGESTIONS = [
   'Where did my money go this month?',
-  'How can I improve my savings rate?',
-  'Am I overspending in any category?',
-  'How should I think about an emergency fund?',
+  'Am I saving enough?',
+  'Can I afford my goal?',
+  'What category am I overspending in?',
+  'How can I improve my financial score?',
+  'How much should I invest every month?',
 ];
 
 const Coach = () => {
