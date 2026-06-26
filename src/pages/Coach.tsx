@@ -104,7 +104,7 @@ const Coach = () => {
     try { localStorage.setItem(HISTORY_KEY, JSON.stringify(next)); } catch {}
   };
 
-  const suggestions = buildSuggestions(!!profile?.student_mode);
+  const suggestions = DEFAULT_SUGGESTIONS;
   const recentTopics = useMemo(
     () => messages.filter(m => m.role === 'user').slice(-5).reverse(),
     [messages]
