@@ -1,22 +1,24 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { AppLayout } from '@/components/AppLayout';
-import { useProfile, useInvestmentProfile, useUpsertInvestmentProfile, useTransactions } from '@/hooks/useFinance';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { useProfile, useInvestmentProfile, useUpsertInvestmentProfile } from '@/hooks/useFinance';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Shield, TrendingUp, Flame, Sparkles, RotateCcw, Info } from 'lucide-react';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 type Risk = 'low' | 'medium' | 'high';
 
 const riskMeta: Record<Risk, { label: string; icon: any; color: string; rationale: string }> = {
-  low:    { label: 'Conservative',         icon: Shield,     color: 'text-success',     rationale: 'Lower risk, preserves capital — fits short horizons or beginners.' },
-  medium: { label: 'Moderate',              icon: TrendingUp, color: 'text-info',        rationale: 'Balanced growth + safety — fits medium horizons.' },
-  high:   { label: 'Growth-Oriented',       icon: Flame,      color: 'text-destructive', rationale: 'Higher volatility for higher long-term returns — fits long horizons.' },
+  low:    { label: 'Conservative',   icon: Shield,     color: 'text-success',     rationale: 'Lower risk, preserves capital — fits short horizons or beginners.' },
+  medium: { label: 'Moderate',       icon: TrendingUp, color: 'text-info',        rationale: 'Balanced growth + safety — fits medium horizons.' },
+  high:   { label: 'Growth-Oriented',icon: Flame,      color: 'text-destructive', rationale: 'Higher volatility for higher long-term returns — fits long horizons.' },
 };
 
 const allocations: Record<Risk, { name: string; pct: number; color: string; why: string }[]> = {
@@ -42,52 +44,65 @@ const allocations: Record<Risk, { name: string; pct: number; color: string; why:
 
 const formatINR = (v: number) => `₹${Math.abs(Math.round(v)).toLocaleString('en-IN')}`;
 
-// Pure derivation from profile inputs — no implicit risk assignment
-function deriveRisk(args: { age?: number | null; risk_appetite?: number | null; horizon?: string | null; experience?: string | null; student: boolean }): Risk {
-  const { age, risk_appetite, horizon, experience, student } = args;
+function deriveRisk(args: { risk_appetite?: number | null; horizon?: string | null; experience?: string | null }): Risk {
+  const { risk_appetite, horizon, experience } = args;
   let score = 0;
-  if (risk_appetite) score += risk_appetite; // 1..5
+  if (risk_appetite) score += risk_appetite;
   if (horizon === 'long') score += 2;
   else if (horizon === 'medium') score += 1;
   if (experience === 'advanced') score += 2;
   else if (experience === 'intermediate') score += 1;
-  if (age && age < 30) score += 1;
-  if (student) score -= 1;
   if (score >= 7) return 'high';
   if (score >= 4) return 'medium';
   return 'low';
 }
 
+const SOURCE_LABEL: Record<string, string> = {
+  salary: 'Salary',
+  pocket_money: 'Pocket Money',
+  freelancing: 'Freelancing',
+  business: 'Business',
+  scholarship: 'Scholarship',
+  multiple: 'Multiple Sources',
+  prefer_not_say: 'Not specified',
+};
+
 const Investments = () => {
   const { data: profile } = useProfile();
   const { data: invest } = useInvestmentProfile();
   const upsert = useUpsertInvestmentProfile();
-  const now = new Date();
-  const { data: txs = [] } = useTransactions(
-    format(startOfMonth(now), 'yyyy-MM-dd'),
-    format(endOfMonth(now), 'yyyy-MM-dd')
-  );
-
-  const income = txs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
-  const recommendedAmount = Math.max(0, Math.round(income * 0.25));
 
   const profileComplete = !!(profile?.risk_appetite && profile?.goal_horizon);
   const risk: Risk = useMemo(() => {
     if (invest?.risk_level) return invest.risk_level as Risk;
     if (!profileComplete) return 'medium';
     return deriveRisk({
-      age: profile?.persona_age,
       risk_appetite: profile?.risk_appetite,
       horizon: profile?.goal_horizon,
       experience: profile?.investment_experience,
-      student: !!profile?.student_mode,
     });
   }, [invest, profile, profileComplete]);
 
-  const [computed, setComputed] = useState(false);
+  const moneyReceived = profile?.monthly_income ? Number(profile.monthly_income) : 0;
+  // Default suggestion: 20% of money received, otherwise nothing pre-filled.
+  const suggestedFromIncome = moneyReceived > 0 ? Math.round(moneyReceived * 0.20) : 0;
+  const [comfortable, setComfortable] = useState<string>(
+    invest?.monthly_investment_amount ? String(invest.monthly_investment_amount) : ''
+  );
+  useEffect(() => {
+    if (invest?.monthly_investment_amount && !comfortable) {
+      setComfortable(String(invest.monthly_investment_amount));
+    }
+  }, [invest, comfortable]);
+
+  const monthly = Number(comfortable) > 0
+    ? Number(comfortable)
+    : invest?.monthly_investment_amount
+      ? Number(invest.monthly_investment_amount)
+      : suggestedFromIncome;
+
   const meta = riskMeta[risk];
   const alloc = allocations[risk];
-  const monthly = invest?.monthly_investment_amount || recommendedAmount;
 
   if (!profileComplete) {
     return (
@@ -112,6 +127,16 @@ const Investments = () => {
     );
   }
 
+  const saveAllocation = async () => {
+    const amt = Number(comfortable);
+    if (!amt || amt <= 0) {
+      toast.error('Enter a comfortable monthly amount first');
+      return;
+    }
+    await upsert.mutateAsync({ risk_level: risk, monthly_investment_amount: amt, goals: profile?.goal_horizon || 'medium' });
+    toast.success('Allocation saved');
+  };
+
   return (
     <AppLayout>
       <div className="mx-auto max-w-4xl space-y-6">
@@ -129,32 +154,31 @@ const Investments = () => {
           </Button>
         </div>
 
-        {/* Profile snapshot — all 5 onboarding inputs */}
+        {/* Profile snapshot — universal fields */}
         <Card className="glass-card">
-          <CardContent className="p-4 grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+          <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div>
-              <p className="text-xs text-muted-foreground">Age</p>
+              <p className="text-xs text-muted-foreground">Monthly Money Received</p>
               <p className="font-medium">
-                {profile?.persona_age ? profile.persona_age : (
-                  <Link to="/onboarding" className="text-primary text-xs underline">Add via onboarding</Link>
-                )}
+                {moneyReceived > 0 ? formatINR(moneyReceived) : <span className="text-muted-foreground">Not provided</span>}
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Monthly Income</p>
-              <p className="font-medium">
-                {profile?.monthly_income ? formatINR(Number(profile.monthly_income)) : (
-                  <Link to="/onboarding" className="text-primary text-xs underline">Add via onboarding</Link>
-                )}
-              </p>
+              <p className="text-xs text-muted-foreground">Risk Appetite</p>
+              <p className="font-medium">{profile?.risk_appetite ?? '—'}/5</p>
             </div>
-            <div><p className="text-xs text-muted-foreground">Risk Appetite</p><p className="font-medium">{profile?.risk_appetite ?? '—'}/5</p></div>
-            <div><p className="text-xs text-muted-foreground">Experience</p><p className="font-medium capitalize">{profile?.investment_experience ?? '—'}</p></div>
-            <div><p className="text-xs text-muted-foreground">Goal Horizon</p><p className="font-medium capitalize">{profile?.goal_horizon ?? '—'}</p></div>
+            <div>
+              <p className="text-xs text-muted-foreground">Investment Experience</p>
+              <p className="font-medium capitalize">{profile?.investment_experience ?? '—'}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Goal Horizon</p>
+              <p className="font-medium capitalize">{profile?.goal_horizon ?? '—'}</p>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Risk + rationale (now references the user's actual inputs) */}
+        {/* Risk + rationale */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="glass-card">
             <CardContent className="p-5 flex items-start gap-4">
@@ -170,41 +194,68 @@ const Investments = () => {
                   <span className="font-medium text-foreground/80">Why:</span> {meta.rationale}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Based on your inputs: risk appetite <b>{profile?.risk_appetite}/5</b>, <b>{profile?.investment_experience}</b> experience,
-                  {' '}<b>{profile?.goal_horizon}</b> horizon{profile?.persona_age ? <>, age <b>{profile.persona_age}</b></> : null}
-                  {profile?.student_mode ? ' (student adjustment applied)' : ''}.
+                  Based on: risk appetite <b>{profile?.risk_appetite}/5</b>, <b>{profile?.investment_experience}</b> experience,
+                  {' '}<b>{profile?.goal_horizon}</b> horizon.
                 </p>
-                {!computed && !invest && (
-                  <Button size="sm" className="mt-3" onClick={async () => {
-                    await upsert.mutateAsync({ risk_level: risk, monthly_investment_amount: recommendedAmount, goals: profile?.goal_horizon || 'medium' });
-                    setComputed(true);
-                  }}>
-                    <Sparkles className="h-3.5 w-3.5 mr-1" /> Save my allocation
-                  </Button>
-                )}
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
+        {/* Suggested monthly investment */}
+        <Card className="glass-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Suggested Monthly Investment</CardTitle>
+            <CardDescription>
+              {moneyReceived > 0
+                ? `Based on ${formatINR(moneyReceived)}/mo received, investing 10–30% is a healthy range.`
+                : 'You didn\'t share monthly money received — tell us a comfortable amount you can invest each month.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {moneyReceived > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {[0.10, 0.20, 0.30].map(pct => {
+                  const amt = Math.round(moneyReceived * pct);
+                  return (
+                    <button key={pct} onClick={() => setComfortable(String(amt))}
+                      className="rounded-lg border border-border p-3 text-left hover:border-primary/40 hover:bg-primary/5 transition">
+                      <p className="text-xs text-muted-foreground">{Math.round(pct * 100)}%</p>
+                      <p className="font-semibold">{formatINR(amt)}/mo</p>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label className="text-xs">How much can you comfortably invest every month? (₹)</Label>
+              <div className="flex gap-2">
+                <Input type="number" value={comfortable} onChange={e => setComfortable(e.target.value)}
+                  placeholder={moneyReceived > 0 ? String(suggestedFromIncome) : 'e.g. 2000'} />
+                <Button onClick={saveAllocation} className="gradient-primary">
+                  <Sparkles className="h-3.5 w-3.5 mr-1" /> Save
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Future value projection */}
-        {(() => {
+        {monthly > 0 && (() => {
           const horizonYears = profile?.goal_horizon === 'short' ? 2 : profile?.goal_horizon === 'long' ? 10 : 5;
-          // expected annual return by risk (beginner-friendly conservative estimates)
           const annualReturn = risk === 'low' ? 0.07 : risk === 'medium' ? 0.10 : 0.12;
           const months = horizonYears * 12;
           const r = annualReturn / 12;
-          // Future value of an ordinary SIP
-          const futureValue = monthly > 0 ? monthly * ((Math.pow(1 + r, months) - 1) / r) * (1 + r) : 0;
+          const futureValue = monthly * ((Math.pow(1 + r, months) - 1) / r) * (1 + r);
           const invested = monthly * months;
           const gains = futureValue - invested;
           return (
             <Card className="glass-card">
               <CardContent className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div>
-                  <p className="text-xs text-muted-foreground">Suggested Monthly</p>
+                  <p className="text-xs text-muted-foreground">Monthly Investment</p>
                   <p className="font-heading text-lg font-bold">{formatINR(monthly)}</p>
-                  <p className="text-[11px] text-muted-foreground">~25% of your monthly income</p>
+                  <p className="text-[11px] text-muted-foreground">your chosen amount</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Horizon</p>
@@ -225,7 +276,6 @@ const Investments = () => {
             </Card>
           );
         })()}
-
 
         {/* Allocation w/ why */}
         <div className="grid lg:grid-cols-2 gap-4">
@@ -251,7 +301,9 @@ const Investments = () => {
           <Card className="glass-card">
             <CardHeader className="pb-2">
               <CardTitle className="font-heading text-lg">Why each allocation</CardTitle>
-              <CardDescription>Suggested monthly contribution: {formatINR(monthly)}</CardDescription>
+              <CardDescription>
+                {monthly > 0 ? `Suggested monthly contribution: ${formatINR(monthly)}` : 'Enter a comfortable amount above to see ₹ splits.'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <TooltipProvider>
@@ -269,7 +321,9 @@ const Investments = () => {
                             <TooltipContent className="max-w-[220px] text-xs">{a.why}</TooltipContent>
                           </UITooltip>
                         </div>
-                        <span className="text-sm font-semibold">{a.pct}% · {formatINR(monthly * a.pct / 100)}</span>
+                        <span className="text-sm font-semibold">
+                          {a.pct}%{monthly > 0 ? ` · ${formatINR(monthly * a.pct / 100)}` : ''}
+                        </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         <span className="font-medium text-foreground/80">Why:</span> {a.why}
