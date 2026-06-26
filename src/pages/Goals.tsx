@@ -278,8 +278,8 @@ const GoalsPage = () => {
         {goals.length === 0 && (
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle className="text-base">Start with a {profile?.student_mode ? 'student' : 'professional'} preset</CardTitle>
-              <CardDescription>One-tap to create a goal sized for your persona.</CardDescription>
+              <CardTitle className="text-base">Pick a starter goal</CardTitle>
+              <CardDescription>One-tap presets reordered for your "{((profile as any)?.primary_goal || 'save_more').replace(/_/g, ' ')}" focus.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {presets.map(p => {
