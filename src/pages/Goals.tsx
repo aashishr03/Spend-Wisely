@@ -116,7 +116,13 @@ const GoalsPage = () => {
       suggestedMonths = months;
     }
     const suggestedMonthly = Math.ceil(remaining / suggestedMonths);
-    const quickAmounts = profile?.student_mode ? [200, 500, 1000] : [1000, 2500, 5000];
+    // Quick contribute amounts scale to the goal: ~1%, 2.5%, 5% of target (rounded to friendly values).
+    const round = (n: number) => {
+      if (n <= 200) return Math.max(50, Math.round(n / 50) * 50);
+      if (n <= 1000) return Math.round(n / 100) * 100;
+      return Math.round(n / 500) * 500;
+    };
+    const quickAmounts = [round(targetAmt * 0.01), round(targetAmt * 0.025), round(targetAmt * 0.05)];
 
     return (
       <Card key={g.id} className="glass-card">
