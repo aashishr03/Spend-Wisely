@@ -164,15 +164,6 @@ const Home = () => {
               <h1 className="font-heading text-2xl font-bold">
                 {greet}{firstName ? `, ${firstName}` : ''} 👋
               </h1>
-              {profile?.student_mode ? (
-                <Badge variant="outline" className="text-primary border-primary/30">
-                  <GraduationCap className="h-3 w-3 mr-1" /> Student
-                </Badge>
-              ) : (
-                <Badge variant="outline">
-                  <Briefcase className="h-3 w-3 mr-1" /> Professional
-                </Badge>
-              )}
             </div>
             <p className="text-sm text-muted-foreground">Your AI Financial Coach — clear money picture at a glance.</p>
           </div>
