@@ -144,7 +144,7 @@ const MentorPage = () => {
               <Brain className="h-6 w-6 text-primary" /> Financial Mentor
             </h1>
             <p className="text-sm text-muted-foreground max-w-2xl">
-              {profile?.student_mode ? 'Student Mode • ' : ''}
+              
               Predicts future spending behaviour and generates preventive financial guidance using your transaction patterns and scenario simulation.
             </p>
           </div>

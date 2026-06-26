@@ -86,10 +86,10 @@ export const HealthScoreCard = ({ data }: { data: HealthBreakdown }) => {
                   .map(p => {
                     const action =
                       p.key === 'savings' ? 'Increase savings rate by cutting one expense category'
-                      : p.key === 'budget' ? 'Create a monthly budget for your top spend category'
+                      : p.key === 'expense' ? 'Bring monthly spending below 70% of money received'
                       : p.key === 'goals' ? 'Add to or finish one savings goal'
                       : p.key === 'consistency' ? 'Keep spending within ±10% of last month'
-                      : 'Set up your investment profile';
+                      : 'Complete the investment questionnaire to save an allocation';
                     return (
                       <li key={p.key} className="flex items-start gap-2">
                         <span className="text-primary mt-0.5">→</span>

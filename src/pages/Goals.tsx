@@ -17,19 +17,29 @@ import { toast } from 'sonner';
 
 const formatINR = (v: number) => `₹${Math.abs(Math.round(v)).toLocaleString('en-IN')}`;
 
-const STUDENT_PRESETS = [
-  { name: 'AWS Certification Fund', icon_key: 'award', target_amount: 15000, category: 'certification' },
-  { name: 'Placement Preparation Fund', icon_key: 'briefcase', target_amount: 25000, category: 'placement' },
-  { name: 'Laptop Upgrade Fund', icon_key: 'laptop', target_amount: 60000, category: 'device' },
-  { name: 'Higher Studies Fund', icon_key: 'graduationcap', target_amount: 200000, category: 'education' },
+const UNIVERSAL_PRESETS = [
+  { name: 'Emergency Fund', icon_key: 'shield', target_amount: 50000, category: 'emergency' },
+  { name: 'Vacation', icon_key: 'plane', target_amount: 40000, category: 'travel' },
+  { name: 'New Laptop', icon_key: 'laptop', target_amount: 60000, category: 'device' },
+  { name: 'Higher Studies', icon_key: 'graduationcap', target_amount: 200000, category: 'education' },
+  { name: 'New Vehicle', icon_key: 'briefcase', target_amount: 100000, category: 'vehicle' },
+  { name: 'Home Down Payment', icon_key: 'home', target_amount: 500000, category: 'home' },
+  { name: 'Retirement Fund', icon_key: 'award', target_amount: 500000, category: 'retirement' },
 ];
 
-const PRO_PRESETS = [
-  { name: 'Emergency Fund (6×)', icon_key: 'shield', target_amount: 300000, category: 'emergency' },
-  { name: 'House Down Payment', icon_key: 'home', target_amount: 1000000, category: 'home' },
-  { name: 'Retirement Boost', icon_key: 'briefcase', target_amount: 500000, category: 'retirement' },
-  { name: 'Vacation Fund', icon_key: 'plane', target_amount: 80000, category: 'travel' },
-];
+// Re-order presets to surface what fits the user's primary goal first.
+const presetsForGoal = (goal?: string | null) => {
+  const order: Record<string, string[]> = {
+    save_more:         ['Emergency Fund', 'Vacation', 'New Laptop', 'New Vehicle', 'Higher Studies', 'Home Down Payment', 'Retirement Fund'],
+    control_spending:  ['Emergency Fund', 'Vacation', 'New Laptop', 'Higher Studies', 'New Vehicle', 'Home Down Payment', 'Retirement Fund'],
+    start_investing:   ['Emergency Fund', 'Retirement Fund', 'Home Down Payment', 'New Vehicle', 'Higher Studies', 'New Laptop', 'Vacation'],
+    build_wealth:      ['Retirement Fund', 'Home Down Payment', 'Emergency Fund', 'New Vehicle', 'Higher Studies', 'New Laptop', 'Vacation'],
+  };
+  const ranked = order[goal || ''] || UNIVERSAL_PRESETS.map(p => p.name);
+  return ranked
+    .map(n => UNIVERSAL_PRESETS.find(p => p.name === n))
+    .filter(Boolean) as typeof UNIVERSAL_PRESETS;
+};
 
 const iconFor = (k?: string) => {
   switch (k) {
@@ -52,7 +62,7 @@ const GoalsPage = () => {
   const updateGoal = useUpdateGoal();
   const deleteGoal = useDeleteGoal();
 
-  const presets = profile?.student_mode ? STUDENT_PRESETS : PRO_PRESETS;
+  const presets = presetsForGoal((profile as any)?.primary_goal);
 
   // Estimate completion: monthly average savings → months remaining
   const now = new Date();
@@ -74,7 +84,7 @@ const GoalsPage = () => {
   const [target, setTarget] = useState('');
   const [targetDate, setTargetDate] = useState('');
 
-  const handlePreset = async (p: typeof STUDENT_PRESETS[number]) => {
+  const handlePreset = async (p: typeof UNIVERSAL_PRESETS[number]) => {
     if (goals.some(g => g.name === p.name)) {
       toast.info('Goal already exists');
       return;
@@ -106,7 +116,13 @@ const GoalsPage = () => {
       suggestedMonths = months;
     }
     const suggestedMonthly = Math.ceil(remaining / suggestedMonths);
-    const quickAmounts = profile?.student_mode ? [200, 500, 1000] : [1000, 2500, 5000];
+    // Quick contribute amounts scale to the goal: ~1%, 2.5%, 5% of target (rounded to friendly values).
+    const round = (n: number) => {
+      if (n <= 200) return Math.max(50, Math.round(n / 50) * 50);
+      if (n <= 1000) return Math.round(n / 100) * 100;
+      return Math.round(n / 500) * 500;
+    };
+    const quickAmounts = [round(targetAmt * 0.01), round(targetAmt * 0.025), round(targetAmt * 0.05)];
 
     return (
       <Card key={g.id} className="glass-card">
@@ -210,7 +226,7 @@ const GoalsPage = () => {
               <Target className="h-6 w-6 text-primary" /> Goals
             </h1>
             <p className="text-sm text-muted-foreground">
-              {profile?.student_mode ? 'Student savings goals & weekly challenges.' : 'Long-term savings goals & weekly challenges.'}
+              Savings goals & weekly challenges, tailored to what you're working toward.
             </p>
           </div>
           <Dialog open={openCustom} onOpenChange={setOpenCustom}>
@@ -262,8 +278,8 @@ const GoalsPage = () => {
         {goals.length === 0 && (
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle className="text-base">Start with a {profile?.student_mode ? 'student' : 'professional'} preset</CardTitle>
-              <CardDescription>One-tap to create a goal sized for your persona.</CardDescription>
+              <CardTitle className="text-base">Pick a starter goal</CardTitle>
+              <CardDescription>One-tap presets reordered for your "{((profile as any)?.primary_goal || 'save_more').replace(/_/g, ' ')}" focus.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {presets.map(p => {

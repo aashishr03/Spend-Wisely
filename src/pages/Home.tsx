@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus, GraduationCap, Briefcase } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,10 +57,9 @@ const Home = () => {
 
   const health = useMemo(() => computeHealthScore({
     income, expense, lastMonthExpense: lastExpense,
-    budgets: budgets.map(b => ({ limit: Number(b.monthly_limit), spent: spentByCat.get(b.category_id) || 0 })),
     goals: goals.map(g => ({ target: Number(g.target_amount), saved: Number(g.saved_amount) })),
-    hasInvestmentProfile: !!invest,
-  }), [income, expense, lastExpense, budgets, spentByCat, goals, invest]);
+    hasInvestmentSetup: !!invest,
+  }), [income, expense, lastExpense, goals, invest]);
 
   // AI actions — max 3, transparent why
   const actions = useMemo<AIAction[]>(() => {
@@ -135,8 +134,8 @@ const Home = () => {
         : 'No movement this month',
     },
     {
-      label: 'Monthly Income', value: income, icon: TrendingUp, gradient: 'gradient-income',
-      sub: income > 0 ? (hasSalary ? 'Salary received' : `${txs.filter(t => t.type === 'income').length} income entries`) : 'Add your first income',
+      label: 'Money Received', value: income, icon: TrendingUp, gradient: 'gradient-income',
+      sub: income > 0 ? (hasSalary ? 'Income received' : `${txs.filter(t => t.type === 'income').length} income entries`) : 'Add your first income',
     },
     {
       label: 'Monthly Expenses', value: expense, icon: TrendingDown, gradient: 'gradient-expense',
@@ -165,15 +164,6 @@ const Home = () => {
               <h1 className="font-heading text-2xl font-bold">
                 {greet}{firstName ? `, ${firstName}` : ''} 👋
               </h1>
-              {profile?.student_mode ? (
-                <Badge variant="outline" className="text-primary border-primary/30">
-                  <GraduationCap className="h-3 w-3 mr-1" /> Student
-                </Badge>
-              ) : (
-                <Badge variant="outline">
-                  <Briefcase className="h-3 w-3 mr-1" /> Professional
-                </Badge>
-              )}
             </div>
             <p className="text-sm text-muted-foreground">Your AI Financial Coach — clear money picture at a glance.</p>
           </div>
