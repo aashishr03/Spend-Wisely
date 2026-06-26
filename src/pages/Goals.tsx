@@ -226,7 +226,7 @@ const GoalsPage = () => {
               <Target className="h-6 w-6 text-primary" /> Goals
             </h1>
             <p className="text-sm text-muted-foreground">
-              {profile?.student_mode ? 'Student savings goals & weekly challenges.' : 'Long-term savings goals & weekly challenges.'}
+              Savings goals & weekly challenges, tailored to what you're working toward.
             </p>
           </div>
           <Dialog open={openCustom} onOpenChange={setOpenCustom}>
