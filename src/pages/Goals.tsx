@@ -17,19 +17,29 @@ import { toast } from 'sonner';
 
 const formatINR = (v: number) => `₹${Math.abs(Math.round(v)).toLocaleString('en-IN')}`;
 
-const STUDENT_PRESETS = [
-  { name: 'AWS Certification Fund', icon_key: 'award', target_amount: 15000, category: 'certification' },
-  { name: 'Placement Preparation Fund', icon_key: 'briefcase', target_amount: 25000, category: 'placement' },
-  { name: 'Laptop Upgrade Fund', icon_key: 'laptop', target_amount: 60000, category: 'device' },
-  { name: 'Higher Studies Fund', icon_key: 'graduationcap', target_amount: 200000, category: 'education' },
+const UNIVERSAL_PRESETS = [
+  { name: 'Emergency Fund', icon_key: 'shield', target_amount: 50000, category: 'emergency' },
+  { name: 'Vacation', icon_key: 'plane', target_amount: 40000, category: 'travel' },
+  { name: 'New Laptop', icon_key: 'laptop', target_amount: 60000, category: 'device' },
+  { name: 'Higher Studies', icon_key: 'graduationcap', target_amount: 200000, category: 'education' },
+  { name: 'New Vehicle', icon_key: 'briefcase', target_amount: 100000, category: 'vehicle' },
+  { name: 'Home Down Payment', icon_key: 'home', target_amount: 500000, category: 'home' },
+  { name: 'Retirement Fund', icon_key: 'award', target_amount: 500000, category: 'retirement' },
 ];
 
-const PRO_PRESETS = [
-  { name: 'Emergency Fund (6×)', icon_key: 'shield', target_amount: 300000, category: 'emergency' },
-  { name: 'House Down Payment', icon_key: 'home', target_amount: 1000000, category: 'home' },
-  { name: 'Retirement Boost', icon_key: 'briefcase', target_amount: 500000, category: 'retirement' },
-  { name: 'Vacation Fund', icon_key: 'plane', target_amount: 80000, category: 'travel' },
-];
+// Re-order presets to surface what fits the user's primary goal first.
+const presetsForGoal = (goal?: string | null) => {
+  const order: Record<string, string[]> = {
+    save_more:         ['Emergency Fund', 'Vacation', 'New Laptop', 'New Vehicle', 'Higher Studies', 'Home Down Payment', 'Retirement Fund'],
+    control_spending:  ['Emergency Fund', 'Vacation', 'New Laptop', 'Higher Studies', 'New Vehicle', 'Home Down Payment', 'Retirement Fund'],
+    start_investing:   ['Emergency Fund', 'Retirement Fund', 'Home Down Payment', 'New Vehicle', 'Higher Studies', 'New Laptop', 'Vacation'],
+    build_wealth:      ['Retirement Fund', 'Home Down Payment', 'Emergency Fund', 'New Vehicle', 'Higher Studies', 'New Laptop', 'Vacation'],
+  };
+  const ranked = order[goal || ''] || UNIVERSAL_PRESETS.map(p => p.name);
+  return ranked
+    .map(n => UNIVERSAL_PRESETS.find(p => p.name === n))
+    .filter(Boolean) as typeof UNIVERSAL_PRESETS;
+};
 
 const iconFor = (k?: string) => {
   switch (k) {
