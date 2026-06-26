@@ -81,50 +81,66 @@ serve(async (req) => {
         .join(", ");
 
       const availableCategories = categories.map((c: any) => `${c.name} (${c.type})`).join(", ");
-      const persona = profile?.student_mode ? "Student" : "Working Professional";
       const goalsStr = goals.length
-        ? goals.map((g: any) => `${g.name}: ₹${Number(g.saved_amount).toFixed(0)}/₹${Number(g.target_amount).toFixed(0)}`).join("; ")
+        ? goals.map((g: any) => `${g.name}: ₹${Number(g.saved_amount).toFixed(0)}/₹${Number(g.target_amount).toFixed(0)}${g.target_date ? ` by ${g.target_date}` : ""}`).join("; ")
         : "none";
       const budgetsStr = budgets.length
         ? budgets.map((b: any) => `${b.categories?.name || "?"} limit ₹${Number(b.monthly_limit).toFixed(0)}`).join("; ")
         : "none";
 
+      // Lightweight health score for grounding
+      const spendPct = thisMonthIncome > 0 ? Math.round((thisMonthExpense / thisMonthIncome) * 100) : null;
+      const goalAvg = goals.length
+        ? Math.round(goals.reduce((s: number, g: any) => s + Math.min(100, (Number(g.saved_amount) / Math.max(1, Number(g.target_amount))) * 100), 0) / goals.length)
+        : 0;
+
       transactionContext = `
 USER PROFILE:
-- Persona: ${persona}
-- Age: ${profile?.persona_age ?? "unknown"}
-- Stated monthly income: ${profile?.monthly_income ? `₹${profile.monthly_income}` : "unknown"}
+- Primary financial goal: ${profile?.primary_goal ?? "unknown"}
+- Money source: ${profile?.money_source ?? "unknown"}
+- Monthly money received: ${profile?.monthly_income ? `₹${profile.monthly_income}` : "not provided"}
 - Risk appetite: ${profile?.risk_appetite ?? "?"}/5
 - Investment experience: ${profile?.investment_experience ?? "unknown"}
 - Goal horizon: ${profile?.goal_horizon ?? "unknown"}
 - Investment profile saved: ${invest ? `risk=${invest.risk_level}, monthly=₹${invest.monthly_investment_amount ?? 0}` : "not set"}
 
 USER'S FINANCIAL DATA (this month unless noted):
-- Total Balance: ₹${totalBalance.toFixed(0)}
-- Income: ₹${thisMonthIncome.toFixed(0)}
-- Expenses: ₹${thisMonthExpense.toFixed(0)} (last month: ₹${lastMonthExpense.toFixed(0)})
-- Savings rate this month: ${savingsRate}%
+- Total Balance across accounts: ₹${totalBalance.toFixed(0)}
+- Money received this month: ₹${thisMonthIncome.toFixed(0)}
+- Expenses this month: ₹${thisMonthExpense.toFixed(0)} (last month: ₹${lastMonthExpense.toFixed(0)})
+- Savings rate: ${savingsRate}%   Spend-to-income: ${spendPct ?? "n/a"}%
+- Avg goal progress: ${goalAvg}%
 - Category breakdown: ${catBreakdown || "No expenses yet"}
 - Active savings goals: ${goalsStr}
 - Budgets set: ${budgetsStr}
-- Recent transactions: ${currentTx.slice(0, 5).map((t: any) => `${t.type} ₹${t.amount} (${t.categories?.name || "N/A"}) on ${t.date}`).join("; ") || "None"}
+- Recent transactions: ${currentTx.slice(0, 8).map((t: any) => `${t.type} ₹${t.amount} (${t.categories?.name || "N/A"}) on ${t.date}`).join("; ") || "None"}
 - Available categories for logging: ${availableCategories}
 `;
     }
 
     const systemPrompt = `You are "Spend Wisely AI", a concise personal finance coach. Currency is Indian Rupees (₹).
 
-CRITICAL RULES:
-- ALWAYS ground every recommendation in the user's actual data above. Reference real numbers from their transactions, goals, budgets, or profile.
-- NEVER give generic textbook advice (e.g., "save 20% of income"). Instead say: "Your savings rate is X% this month — here's why and what to do."
-- EVERY recommendation must include a **Why:** line explaining what data drove it (e.g., "Why: Food spending is ₹4,200 vs ₹2,800 last month").
-- If the user has no data on a topic, say so plainly and ask one specific question to fill the gap.
-- Tailor tone to persona: ${"${persona placeholder handled via context above}"}.
+ABSOLUTE RULES — DO NOT BREAK:
+- The block below ("USER'S FINANCIAL DATA") IS your access to the user's data. NEVER say "I don't have access to your transactions/data/goals" — you DO. Use it.
+- If a specific field is missing (e.g., money received not provided), say "you haven't shared X yet" and answer using whatever data IS available (transactions, goals, balances).
+- ALWAYS ground every recommendation in real numbers from the data block.
+- EVERY recommendation must include a **Why:** line citing the specific number it came from.
+- NEVER give generic textbook advice. Be specific: "You spent ₹X on Food (Y% of expenses) — cut Z to save ₹W."
+- Do NOT recommend specific banks, cards, brokers, mutual fund names, or product brands.
 
 RESPONSE STYLE:
-- Short and structured. Use bullet points and line breaks. No long paragraphs.
-- 1-2 emojis max per response.
-- For transaction logging, use this exact format:
+- Short and structured. Bullets and line breaks. No long paragraphs.
+- 1-2 emojis max.
+- For category breakdowns, list the top 3-5 with ₹ amounts and % of expenses.
+
+TRANSACTION LOGGING:
+When the user mentions earning or spending money, extract it and add a JSON block at the END:
+\`\`\`json-transactions
+[{"type":"income","amount":5000,"category":"Salary","description":"Salary received"}]
+\`\`\`
+Only include json-transactions when the user mentions an actual new transaction.
+
+For logged transactions use this exact format above the JSON:
 
 **Expense Logged ✅**
 • Category: [category]
@@ -133,16 +149,6 @@ RESPONSE STYLE:
 • Remaining Balance: ₹[balance]
 
 _[One-line insight grounded in their category history]_
-
-For general questions, respond in 2-4 short bullets with a Why line per recommendation.
-
-TRANSACTION LOGGING:
-When the user mentions earning or spending money, extract it and add a JSON block at the END:
-\`\`\`json-transactions
-[{"type":"income","amount":5000,"category":"Salary","description":"Salary received"}]
-\`\`\`
-
-Only include json-transactions when user mentions actual transactions.
 
 ${transactionContext}`;
 
