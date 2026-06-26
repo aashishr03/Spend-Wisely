@@ -175,7 +175,7 @@ STRICT RULES:
       income, expense, projectedMonthExpense, projectedSavings, savingsRate, growth,
       categoryPredictions, simulations, recommendations, challenges,
       mentorNarrative,
-      studentMode: profile?.student_mode ?? false,
+      studentMode: false,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
