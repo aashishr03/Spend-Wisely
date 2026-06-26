@@ -134,8 +134,8 @@ const Home = () => {
         : 'No movement this month',
     },
     {
-      label: 'Monthly Income', value: income, icon: TrendingUp, gradient: 'gradient-income',
-      sub: income > 0 ? (hasSalary ? 'Salary received' : `${txs.filter(t => t.type === 'income').length} income entries`) : 'Add your first income',
+      label: 'Money Received', value: income, icon: TrendingUp, gradient: 'gradient-income',
+      sub: income > 0 ? (hasSalary ? 'Income received' : `${txs.filter(t => t.type === 'income').length} income entries`) : 'Add your first income',
     },
     {
       label: 'Monthly Expenses', value: expense, icon: TrendingDown, gradient: 'gradient-expense',
