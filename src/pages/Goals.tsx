@@ -62,7 +62,7 @@ const GoalsPage = () => {
   const updateGoal = useUpdateGoal();
   const deleteGoal = useDeleteGoal();
 
-  const presets = profile?.student_mode ? STUDENT_PRESETS : PRO_PRESETS;
+  const presets = presetsForGoal((profile as any)?.primary_goal);
 
   // Estimate completion: monthly average savings → months remaining
   const now = new Date();
