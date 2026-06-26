@@ -139,7 +139,7 @@ serve(async (req) => {
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     let mentorNarrative = "";
     if (apiKey) {
-      const prompt = `You are an AI Financial Mentor for a ${profile?.student_mode ? "college student" : "young professional"} in India. Currency is INR ₹.
+      const prompt = `You are an AI Financial Mentor for a user in India. Currency is INR ₹.
 
 Data:
 - Income this month: ₹${income.toFixed(0)}
