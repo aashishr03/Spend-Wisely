@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus, GraduationCap, Briefcase } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
