@@ -142,6 +142,8 @@ const Transactions = () => {
             ))}
           </CardContent>
         </Card>
+
+        <SpendingAnalytics txs={txs} />
       </div>
     </AppLayout>
   );
