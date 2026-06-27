@@ -1,8 +1,11 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useFinance';
 
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useProfile();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -13,5 +16,12 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+
+  // Gate every protected page on onboarding completion (modal-style enforcement)
+  const onOnboarding = location.pathname === '/onboarding';
+  if (!profileLoading && profile && !profile.onboarding_completed && !onOnboarding) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return <>{children}</>;
 };

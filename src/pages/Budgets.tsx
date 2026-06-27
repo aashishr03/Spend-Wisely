@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AppLayout } from '@/components/AppLayout';
 import { useCategories, useBudgets, useUpsertBudget, useTransactions } from '@/hooks/useFinance';
+import { BudgetAdvisor } from '@/components/BudgetAdvisor';
 import { toast } from 'sonner';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 const Budgets = () => {
@@ -24,6 +25,11 @@ const Budgets = () => {
     format(startOfMonth(now), 'yyyy-MM-dd'),
     format(endOfMonth(now), 'yyyy-MM-dd')
   );
+  const lastMonthDate = subMonths(now, 1);
+  const { data: lastTransactions = [] } = useTransactions(
+    format(startOfMonth(lastMonthDate), 'yyyy-MM-dd'),
+    format(endOfMonth(lastMonthDate), 'yyyy-MM-dd')
+  );
   const upsertBudget = useUpsertBudget();
 
   const [showAdd, setShowAdd] = useState(false);
@@ -36,6 +42,16 @@ const Budgets = () => {
     transactions
       .filter((t) => t.type === 'expense' && t.category_id === categoryId)
       .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const overview = useMemo(() => {
+    const totalBudget = budgets.reduce((s, b) => s + Number(b.monthly_limit), 0);
+    const totalSpent = budgets.reduce((s, b) => s + getSpent(b.category_id), 0);
+    const remaining = totalBudget - totalSpent;
+    const utilization = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+    return { totalBudget, totalSpent, remaining, utilization };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [budgets, transactions]);
+
 
   const handleAdd = async () => {
     if (!selectedCat || !limit) return;
@@ -65,6 +81,25 @@ const Budgets = () => {
           </div>
           <Button className="gradient-primary" onClick={() => setShowAdd(true)}>Add Budget</Button>
         </div>
+
+        {budgets.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: 'Monthly Budget', value: `₹${overview.totalBudget.toLocaleString('en-IN')}`, gradient: 'gradient-hero' },
+              { label: 'Spent', value: `₹${overview.totalSpent.toLocaleString('en-IN')}`, gradient: 'gradient-expense' },
+              { label: 'Remaining', value: `₹${Math.max(0, overview.remaining).toLocaleString('en-IN')}`, gradient: 'gradient-income' },
+              { label: 'Budget Utilization', value: `${overview.utilization}%`, gradient: 'gradient-primary' },
+            ].map((s) => (
+              <Card key={s.label} className={`${s.gradient} text-primary-foreground border-0`}>
+                <CardContent className="p-4">
+                  <p className="text-xs opacity-80">{s.label}</p>
+                  <p className="font-heading text-xl font-bold mt-1 truncate">{s.value}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
 
         {isLoading ? (
           <div className="flex justify-center py-12">
@@ -117,6 +152,12 @@ const Budgets = () => {
             })}
           </div>
         )}
+
+        {budgets.length > 0 && (
+          <BudgetAdvisor budgets={budgets} txs={transactions} lastTxs={lastTransactions} />
+        )}
+
+
 
         <Dialog open={showAdd} onOpenChange={setShowAdd}>
           <DialogContent>
