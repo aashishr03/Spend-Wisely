@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Home, Receipt, Target, Brain, TrendingUp, Settings, Menu, X, DollarSign,
+  Home, Receipt, Target, Brain, TrendingUp, Settings, Menu, X, DollarSign, Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { to: '/home', icon: Home, label: 'Home' },
   { to: '/transactions', icon: Receipt, label: 'Transactions' },
+  { to: '/budgets', icon: Wallet, label: 'Budget' },
   { to: '/goals', icon: Target, label: 'Goals' },
   { to: '/coach', icon: Brain, label: 'AI Coach' },
   { to: '/investments', icon: TrendingUp, label: 'Investments' },
