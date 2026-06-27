@@ -153,6 +153,12 @@ const Budgets = () => {
           </div>
         )}
 
+        {budgets.length > 0 && (
+          <BudgetAdvisor budgets={budgets} txs={transactions} lastTxs={lastTransactions} />
+        )}
+
+
+
         <Dialog open={showAdd} onOpenChange={setShowAdd}>
           <DialogContent>
             <DialogHeader>
