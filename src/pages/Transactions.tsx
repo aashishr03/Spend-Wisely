@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useTransactions, useDeleteTransaction } from '@/hooks/useFinance';
 import { downloadReportPDF } from '@/lib/generateReport';
+import { SpendingAnalytics } from '@/components/SpendingAnalytics';
 
 type Filter = 'today' | 'month' | 'all';
 
