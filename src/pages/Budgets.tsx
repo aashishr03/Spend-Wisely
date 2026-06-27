@@ -43,6 +43,16 @@ const Budgets = () => {
       .filter((t) => t.type === 'expense' && t.category_id === categoryId)
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
+  const overview = useMemo(() => {
+    const totalBudget = budgets.reduce((s, b) => s + Number(b.monthly_limit), 0);
+    const totalSpent = budgets.reduce((s, b) => s + getSpent(b.category_id), 0);
+    const remaining = totalBudget - totalSpent;
+    const utilization = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+    return { totalBudget, totalSpent, remaining, utilization };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [budgets, transactions]);
+
+
   const handleAdd = async () => {
     if (!selectedCat || !limit) return;
     try {
