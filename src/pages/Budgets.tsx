@@ -82,6 +82,25 @@ const Budgets = () => {
           <Button className="gradient-primary" onClick={() => setShowAdd(true)}>Add Budget</Button>
         </div>
 
+        {budgets.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: 'Monthly Budget', value: `₹${overview.totalBudget.toLocaleString('en-IN')}`, gradient: 'gradient-hero' },
+              { label: 'Spent', value: `₹${overview.totalSpent.toLocaleString('en-IN')}`, gradient: 'gradient-expense' },
+              { label: 'Remaining', value: `₹${Math.max(0, overview.remaining).toLocaleString('en-IN')}`, gradient: 'gradient-income' },
+              { label: 'Budget Utilization', value: `${overview.utilization}%`, gradient: 'gradient-primary' },
+            ].map((s) => (
+              <Card key={s.label} className={`${s.gradient} text-primary-foreground border-0`}>
+                <CardContent className="p-4">
+                  <p className="text-xs opacity-80">{s.label}</p>
+                  <p className="font-heading text-xl font-bold mt-1 truncate">{s.value}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
