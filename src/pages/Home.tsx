@@ -227,6 +227,10 @@ const Home = () => {
 
         <HealthScoreCard data={health} />
 
+        <FinancialInsights txs={txs} lastTxs={lastTxs} goals={goals} />
+
+        <SavingsRecommendations txs={txs} lastTxs={lastTxs} goals={goals} hasInvestmentSetup={!!invest} />
+
         <AIActionCenter actions={actions} />
       </div>
     </AppLayout>
