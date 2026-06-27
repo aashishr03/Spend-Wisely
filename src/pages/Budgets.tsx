@@ -25,6 +25,11 @@ const Budgets = () => {
     format(startOfMonth(now), 'yyyy-MM-dd'),
     format(endOfMonth(now), 'yyyy-MM-dd')
   );
+  const lastMonthDate = subMonths(now, 1);
+  const { data: lastTransactions = [] } = useTransactions(
+    format(startOfMonth(lastMonthDate), 'yyyy-MM-dd'),
+    format(endOfMonth(lastMonthDate), 'yyyy-MM-dd')
+  );
   const upsertBudget = useUpsertBudget();
 
   const [showAdd, setShowAdd] = useState(false);
