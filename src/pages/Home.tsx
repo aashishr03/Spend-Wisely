@@ -15,6 +15,8 @@ import { useGoals } from '@/hooks/useGoals';
 import { computeHealthScore } from '@/lib/healthScore';
 import { HealthScoreCard } from '@/components/HealthScoreCard';
 import { AIActionCenter, type AIAction } from '@/components/AIActionCenter';
+import { FinancialInsights } from '@/components/FinancialInsights';
+import { SavingsRecommendations } from '@/components/SavingsRecommendations';
 
 const formatINR = (v: number) =>
   `₹${Math.abs(Math.round(v)).toLocaleString('en-IN')}`;
