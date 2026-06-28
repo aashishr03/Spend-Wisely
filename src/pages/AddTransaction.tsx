@@ -17,6 +17,7 @@ import { useCategories, useAccounts, useAddTransaction, useUsageLimits, useIncre
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { parseVoiceTransaction, type ParsedVoiceTx } from '@/lib/parseVoiceTransaction';
 
 const formatAmountDisplay = (val: string) => {
   const num = parseFloat(val);
@@ -42,11 +43,15 @@ const AddTransaction = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  // Voice state
+  // Voice state — transcript kept in a ref so each recording is independent (no stale closure).
   const [isListening, setIsListening] = useState(false);
   const [voiceText, setVoiceText] = useState('');
   const [voiceParsing, setVoiceParsing] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const finalTranscriptRef = useRef<string>('');
+
+  // Voice confirmation
+  const [voiceConfirm, setVoiceConfirm] = useState<ParsedVoiceTx | null>(null);
 
   // Receipt state
   const [receiptParsing, setReceiptParsing] = useState(false);
@@ -108,44 +113,60 @@ const AddTransaction = () => {
 
     if (isListening) {
       recognitionRef.current?.stop();
-      setIsListening(false);
       return;
     }
+
+    // Hard reset all previous voice state before every new recording.
+    finalTranscriptRef.current = '';
+    setVoiceText('');
+    setVoiceConfirm(null);
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-IN';
     recognition.interimResults = true;
+    recognition.continuous = false;
     recognition.maxAlternatives = 1;
     recognitionRef.current = recognition;
 
     recognition.onstart = () => {
-      setIsListening(true);
+      finalTranscriptRef.current = '';
       setVoiceText('');
+      setIsListening(true);
     };
 
     recognition.onresult = (event: any) => {
-      let transcript = '';
+      let interim = '';
+      let finalText = '';
       for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+        const r = event.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
       }
-      setVoiceText(transcript);
+      // Always overwrite — never accumulate across recordings.
+      finalTranscriptRef.current = finalText;
+      setVoiceText(finalText || interim);
     };
 
-    recognition.onend = async () => {
+    recognition.onend = () => {
       setIsListening(false);
-      const text = voiceText || '';
-      if (!text.trim()) {
+      const text = (finalTranscriptRef.current || '').trim();
+      // Clear ref so a follow-up retry without speech doesn't reuse it.
+      finalTranscriptRef.current = '';
+      if (!text) {
         toast.error('No speech detected. Please try again.');
+        setVoiceText('');
         return;
       }
-      await parseVoice(text);
+      handleParsedVoice(text);
     };
 
     recognition.onerror = (event: any) => {
       setIsListening(false);
+      finalTranscriptRef.current = '';
+      setVoiceText('');
       if (event.error === 'not-allowed') {
         toast.error('Microphone access denied. Please allow microphone permissions.');
-      } else {
+      } else if (event.error !== 'aborted' && event.error !== 'no-speech') {
         toast.error('Voice recognition error. Please try again.');
       }
     };
@@ -153,25 +174,57 @@ const AddTransaction = () => {
     recognition.start();
   };
 
-  const parseVoice = async (text: string) => {
-    setVoiceParsing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('parse-transaction', {
-        body: { mode: 'voice', text },
-      });
-      if (error) throw error;
-      if (data?.result) {
-        applyParsedResult(data.result);
-        incrementUsage.mutate('voice_entries_used');
-        toast.success('Voice entry parsed successfully!');
-      }
-    } catch (err) {
-      console.error('Voice parse error:', err);
-      toast.error('Failed to parse voice entry. Please enter manually.');
-    } finally {
-      setVoiceParsing(false);
+  const handleParsedVoice = (text: string) => {
+    const parsed = parseVoiceTransaction(text);
+    console.log('[VoiceEntry] Parsed amount:', parsed.amount);
+    console.log('[VoiceEntry] Parsed category:', parsed.category);
+    console.log('[VoiceEntry] Parsed type:', parsed.type);
+
+    if (!parsed.amount || !parsed.type || !parsed.category) {
+      const missing = [
+        !parsed.amount && 'amount',
+        !parsed.type && 'type',
+        !parsed.category && 'category',
+      ].filter(Boolean).join(', ');
+      toast.error(`Could not detect ${missing}. Please try again — say something like "spent 500 on food".`);
       setVoiceText('');
+      return;
     }
+    setVoiceConfirm(parsed);
+  };
+
+  const confirmVoice = () => {
+    if (!voiceConfirm) return;
+    const { amount: amt, type: t, category, description: desc } = voiceConfirm;
+    setAmount(String(amt));
+    setType(t!);
+    setDescription(desc);
+    const cat = categories.find(c => c.name.toLowerCase() === category!.toLowerCase() && c.type === t);
+    if (cat) setSelectedCategory(cat.id);
+    incrementUsage.mutate('voice_entries_used');
+    toast.success('Voice entry applied — review and save.');
+    console.log('[VoiceEntry] Final object applied:', { amount: amt, type: t, category, description: desc });
+    setVoiceConfirm(null);
+    setVoiceText('');
+  };
+
+  const editVoice = () => {
+    if (!voiceConfirm) return;
+    const { amount: amt, type: t, category, description: desc } = voiceConfirm;
+    if (amt) setAmount(String(amt));
+    if (t) setType(t);
+    if (desc) setDescription(desc);
+    if (category) {
+      const cat = categories.find(c => c.name.toLowerCase() === category.toLowerCase() && c.type === (t ?? type));
+      if (cat) setSelectedCategory(cat.id);
+    }
+    setVoiceConfirm(null);
+    setVoiceText('');
+  };
+
+  const cancelVoice = () => {
+    setVoiceConfirm(null);
+    setVoiceText('');
   };
 
   // ─── Receipt Scan ───
@@ -432,6 +485,41 @@ const AddTransaction = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Voice confirmation modal */}
+        <Dialog open={!!voiceConfirm} onOpenChange={(o) => !o && cancelVoice()}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="font-heading">Confirm voice entry</DialogTitle>
+              <DialogDescription>Review the detected transaction before saving.</DialogDescription>
+            </DialogHeader>
+            {voiceConfirm && (
+              <div className="rounded-xl border border-border p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Type</span>
+                  <span className={cn('text-sm font-semibold', voiceConfirm.type === 'income' ? 'text-success' : 'text-destructive')}>
+                    {voiceConfirm.type === 'income' ? 'Income' : 'Expense'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Category</span>
+                  <span className="text-sm font-medium">{voiceConfirm.category}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Amount</span>
+                  <span className="font-heading text-xl font-bold">₹{voiceConfirm.amount?.toLocaleString('en-IN')}</span>
+                </div>
+                <p className="text-xs text-muted-foreground pt-2 border-t border-border">"{voiceConfirm.raw}"</p>
+              </div>
+            )}
+            <DialogFooter className="gap-2">
+              <Button variant="ghost" onClick={cancelVoice}>Cancel</Button>
+              <Button variant="outline" onClick={editVoice}>Edit</Button>
+              <Button className="gradient-primary" onClick={confirmVoice}>Confirm</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </AppLayout>
   );
