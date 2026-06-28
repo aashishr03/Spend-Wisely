@@ -113,44 +113,60 @@ const AddTransaction = () => {
 
     if (isListening) {
       recognitionRef.current?.stop();
-      setIsListening(false);
       return;
     }
+
+    // Hard reset all previous voice state before every new recording.
+    finalTranscriptRef.current = '';
+    setVoiceText('');
+    setVoiceConfirm(null);
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-IN';
     recognition.interimResults = true;
+    recognition.continuous = false;
     recognition.maxAlternatives = 1;
     recognitionRef.current = recognition;
 
     recognition.onstart = () => {
-      setIsListening(true);
+      finalTranscriptRef.current = '';
       setVoiceText('');
+      setIsListening(true);
     };
 
     recognition.onresult = (event: any) => {
-      let transcript = '';
+      let interim = '';
+      let finalText = '';
       for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+        const r = event.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
       }
-      setVoiceText(transcript);
+      // Always overwrite — never accumulate across recordings.
+      finalTranscriptRef.current = finalText;
+      setVoiceText(finalText || interim);
     };
 
-    recognition.onend = async () => {
+    recognition.onend = () => {
       setIsListening(false);
-      const text = voiceText || '';
-      if (!text.trim()) {
+      const text = (finalTranscriptRef.current || '').trim();
+      // Clear ref so a follow-up retry without speech doesn't reuse it.
+      finalTranscriptRef.current = '';
+      if (!text) {
         toast.error('No speech detected. Please try again.');
+        setVoiceText('');
         return;
       }
-      await parseVoice(text);
+      handleParsedVoice(text);
     };
 
     recognition.onerror = (event: any) => {
       setIsListening(false);
+      finalTranscriptRef.current = '';
+      setVoiceText('');
       if (event.error === 'not-allowed') {
         toast.error('Microphone access denied. Please allow microphone permissions.');
-      } else {
+      } else if (event.error !== 'aborted' && event.error !== 'no-speech') {
         toast.error('Voice recognition error. Please try again.');
       }
     };
@@ -158,25 +174,57 @@ const AddTransaction = () => {
     recognition.start();
   };
 
-  const parseVoice = async (text: string) => {
-    setVoiceParsing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('parse-transaction', {
-        body: { mode: 'voice', text },
-      });
-      if (error) throw error;
-      if (data?.result) {
-        applyParsedResult(data.result);
-        incrementUsage.mutate('voice_entries_used');
-        toast.success('Voice entry parsed successfully!');
-      }
-    } catch (err) {
-      console.error('Voice parse error:', err);
-      toast.error('Failed to parse voice entry. Please enter manually.');
-    } finally {
-      setVoiceParsing(false);
+  const handleParsedVoice = (text: string) => {
+    const parsed = parseVoiceTransaction(text);
+    console.log('[VoiceEntry] Parsed amount:', parsed.amount);
+    console.log('[VoiceEntry] Parsed category:', parsed.category);
+    console.log('[VoiceEntry] Parsed type:', parsed.type);
+
+    if (!parsed.amount || !parsed.type || !parsed.category) {
+      const missing = [
+        !parsed.amount && 'amount',
+        !parsed.type && 'type',
+        !parsed.category && 'category',
+      ].filter(Boolean).join(', ');
+      toast.error(`Could not detect ${missing}. Please try again — say something like "spent 500 on food".`);
       setVoiceText('');
+      return;
     }
+    setVoiceConfirm(parsed);
+  };
+
+  const confirmVoice = () => {
+    if (!voiceConfirm) return;
+    const { amount: amt, type: t, category, description: desc } = voiceConfirm;
+    setAmount(String(amt));
+    setType(t!);
+    setDescription(desc);
+    const cat = categories.find(c => c.name.toLowerCase() === category!.toLowerCase() && c.type === t);
+    if (cat) setSelectedCategory(cat.id);
+    incrementUsage.mutate('voice_entries_used');
+    toast.success('Voice entry applied — review and save.');
+    console.log('[VoiceEntry] Final object applied:', { amount: amt, type: t, category, description: desc });
+    setVoiceConfirm(null);
+    setVoiceText('');
+  };
+
+  const editVoice = () => {
+    if (!voiceConfirm) return;
+    const { amount: amt, type: t, category, description: desc } = voiceConfirm;
+    if (amt) setAmount(String(amt));
+    if (t) setType(t);
+    if (desc) setDescription(desc);
+    if (category) {
+      const cat = categories.find(c => c.name.toLowerCase() === category.toLowerCase() && c.type === (t ?? type));
+      if (cat) setSelectedCategory(cat.id);
+    }
+    setVoiceConfirm(null);
+    setVoiceText('');
+  };
+
+  const cancelVoice = () => {
+    setVoiceConfirm(null);
+    setVoiceText('');
   };
 
   // ─── Receipt Scan ───
