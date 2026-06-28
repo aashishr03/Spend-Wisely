@@ -485,6 +485,41 @@ const AddTransaction = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Voice confirmation modal */}
+        <Dialog open={!!voiceConfirm} onOpenChange={(o) => !o && cancelVoice()}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="font-heading">Confirm voice entry</DialogTitle>
+              <DialogDescription>Review the detected transaction before saving.</DialogDescription>
+            </DialogHeader>
+            {voiceConfirm && (
+              <div className="rounded-xl border border-border p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Type</span>
+                  <span className={cn('text-sm font-semibold', voiceConfirm.type === 'income' ? 'text-success' : 'text-destructive')}>
+                    {voiceConfirm.type === 'income' ? 'Income' : 'Expense'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Category</span>
+                  <span className="text-sm font-medium">{voiceConfirm.category}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wide text-muted-foreground">Amount</span>
+                  <span className="font-heading text-xl font-bold">₹{voiceConfirm.amount?.toLocaleString('en-IN')}</span>
+                </div>
+                <p className="text-xs text-muted-foreground pt-2 border-t border-border">"{voiceConfirm.raw}"</p>
+              </div>
+            )}
+            <DialogFooter className="gap-2">
+              <Button variant="ghost" onClick={cancelVoice}>Cancel</Button>
+              <Button variant="outline" onClick={editVoice}>Edit</Button>
+              <Button className="gradient-primary" onClick={confirmVoice}>Confirm</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </AppLayout>
   );
