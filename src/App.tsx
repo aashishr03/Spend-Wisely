@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,21 +7,29 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AIAssistant } from "@/components/AIAssistant";
-import AuthPage from "./pages/Auth";
-import EmailVerified from "./pages/EmailVerified";
-import Onboarding from "./pages/Onboarding";
-import Home from "./pages/Home";
-import Transactions from "./pages/Transactions";
-import AddTransaction from "./pages/AddTransaction";
-import Goals from "./pages/Goals";
-import Coach from "./pages/Coach";
-import Investments from "./pages/Investments";
-import Report from "./pages/Report";
-import Budgets from "./pages/Budgets";
-import SettingsPage from "./pages/Settings";
-import NotFound from "./pages/NotFound";
+
+// Lazy-loaded route pages — splits recharts, jspdf, react-markdown, etc. per route.
+const AuthPage = lazy(() => import("./pages/Auth"));
+const EmailVerified = lazy(() => import("./pages/EmailVerified"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Home = lazy(() => import("./pages/Home"));
+const Transactions = lazy(() => import("./pages/Transactions"));
+const AddTransaction = lazy(() => import("./pages/AddTransaction"));
+const Goals = lazy(() => import("./pages/Goals"));
+const Coach = lazy(() => import("./pages/Coach"));
+const Investments = lazy(() => import("./pages/Investments"));
+const Report = lazy(() => import("./pages/Report"));
+const Budgets = lazy(() => import("./pages/Budgets"));
+const SettingsPage = lazy(() => import("./pages/Settings"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+
+const RouteFallback = () => (
+  <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+  </div>
+);
 
 const AppContent = () => {
   const { user } = useAuth();
@@ -32,28 +41,30 @@ const AppContent = () => {
 
   return (
     <>
-      <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route path="/dashboard" element={<Navigate to="/home" replace />} />
-        <Route path="/mentor" element={<Navigate to="/coach" replace />} />
-        <Route path="/insights" element={<Navigate to="/report" replace />} />
-        <Route path="/invest" element={<Navigate to="/investments" replace />} />
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/home" replace />} />
+          <Route path="/mentor" element={<Navigate to="/coach" replace />} />
+          <Route path="/insights" element={<Navigate to="/report" replace />} />
+          <Route path="/invest" element={<Navigate to="/investments" replace />} />
 
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/auth/verified" element={<EmailVerified />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/verified" element={<EmailVerified />} />
 
-        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-        <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-        <Route path="/add-transaction" element={<ProtectedRoute><AddTransaction /></ProtectedRoute>} />
-        <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
-        <Route path="/coach" element={<ProtectedRoute><Coach /></ProtectedRoute>} />
-        <Route path="/investments" element={<ProtectedRoute><Investments /></ProtectedRoute>} />
-        <Route path="/report" element={<ProtectedRoute><Report /></ProtectedRoute>} />
-        <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+          <Route path="/add-transaction" element={<ProtectedRoute><AddTransaction /></ProtectedRoute>} />
+          <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+          <Route path="/coach" element={<ProtectedRoute><Coach /></ProtectedRoute>} />
+          <Route path="/investments" element={<ProtectedRoute><Investments /></ProtectedRoute>} />
+          <Route path="/report" element={<ProtectedRoute><Report /></ProtectedRoute>} />
+          <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
       {showAI && <AIAssistant />}
     </>
   );
