@@ -112,7 +112,7 @@ const Coach = () => {
 
   return (
     <AppLayout>
-      <div className="mx-auto max-w-6xl space-y-4 h-[calc(100vh-6rem)] md:h-[calc(100vh-4rem)] flex flex-col">
+      <div className="mx-auto max-w-6xl space-y-4 h-[calc(100dvh-11rem)] md:h-[calc(100vh-4rem)] flex flex-col">
         <div className="flex items-end justify-between gap-3">
           <div>
             <h1 className="font-heading text-2xl font-bold flex items-center gap-2">
