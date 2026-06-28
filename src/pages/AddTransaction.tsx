@@ -43,11 +43,15 @@ const AddTransaction = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  // Voice state
+  // Voice state — transcript kept in a ref so each recording is independent (no stale closure).
   const [isListening, setIsListening] = useState(false);
   const [voiceText, setVoiceText] = useState('');
   const [voiceParsing, setVoiceParsing] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const finalTranscriptRef = useRef<string>('');
+
+  // Voice confirmation
+  const [voiceConfirm, setVoiceConfirm] = useState<ParsedVoiceTx | null>(null);
 
   // Receipt state
   const [receiptParsing, setReceiptParsing] = useState(false);
