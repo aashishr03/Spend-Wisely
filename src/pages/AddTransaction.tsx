@@ -17,6 +17,7 @@ import { useCategories, useAccounts, useAddTransaction, useUsageLimits, useIncre
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { parseVoiceTransaction, type ParsedVoiceTx } from '@/lib/parseVoiceTransaction';
 
 const formatAmountDisplay = (val: string) => {
   const num = parseFloat(val);
