@@ -157,6 +157,17 @@ const Home = () => {
   const greet = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
   const firstName = profile?.full_name?.split(' ')[0];
 
+  // Auto-generated dashboard lines (top category + MoM)
+  const topCatEntry = useMemo(() => {
+    const m = new Map<string, number>();
+    txs.filter(t => t.type === 'expense').forEach(t => {
+      const n = t.categories?.name || 'Other';
+      m.set(n, (m.get(n) || 0) + Number(t.amount));
+    });
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1])[0];
+  }, [txs]);
+  const momPct = lastExpense > 0 && expense > 0 ? Math.round(((expense - lastExpense) / lastExpense) * 100) : null;
+
   return (
     <AppLayout>
       <div className="mx-auto max-w-5xl space-y-6">
@@ -175,18 +186,39 @@ const Home = () => {
         </div>
 
         {/* Personalized AI narrative */}
-        {(income > 0 || topGoalSummary || riskLabel) && (
+        {(income > 0 || topGoalSummary || riskLabel || topCatEntry || momPct !== null) && (
           <Card className="glass-card border-primary/20">
             <CardContent className="p-4 space-y-1 text-sm">
               {income > 0 && (
                 <p>
-                  This month you saved <span className="font-semibold text-success">{savingsRate}%</span> of your income
-                  {savingsRate >= 20 ? ' — strong pace.' : savingsRate >= 10 ? ' — solid, aim for 20%+.' : ' — let\'s improve this.'}
+                  {savingsRate >= 30
+                    ? `Great job! You saved ${savingsRate}% this month.`
+                    : savingsRate >= 10
+                      ? `You saved ${savingsRate}% of your income this month — solid, aim for 20%+.`
+                      : savingsRate >= 0
+                        ? `Your savings rate is ${savingsRate}% — let's push it higher.`
+                        : `You spent more than you received this month — let's tighten up.`}
+                </p>
+              )}
+              {momPct !== null && Math.abs(momPct) >= 5 && (
+                <p>
+                  {momPct < 0
+                    ? `You spent ${Math.abs(momPct)}% less than last month — nice control.`
+                    : `You spent ${momPct}% more than last month — worth a quick review.`}
+                </p>
+              )}
+              {topCatEntry && (
+                <p>
+                  <span className="font-semibold">{topCatEntry[0]}</span> is your biggest expense category this month.
                 </p>
               )}
               {topGoalSummary && (
                 <p>
-                  You're <span className="font-semibold">{goalPct}%</span> of the way to your <span className="font-semibold">{topGoalSummary.name}</span>.
+                  {goalPct >= 100
+                    ? `You reached your ${topGoalSummary.name} goal 🎯`
+                    : goalPct >= 75
+                      ? `You're ${goalPct}% to your ${topGoalSummary.name} — final stretch!`
+                      : `You're ${goalPct}% of the way to your ${topGoalSummary.name}.`}
                 </p>
               )}
               {riskLabel && (
