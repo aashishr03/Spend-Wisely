@@ -234,9 +234,7 @@ const Coach = () => {
                         : 'text-foreground'
                     )}>
                       {m.role === 'assistant' ? (
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown>{m.content}</ReactMarkdown>
-                        </div>
+                        <CoachMessageBody content={m.content} />
                       ) : (
                         <p className="whitespace-pre-wrap">{m.content}</p>
                       )}
