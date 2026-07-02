@@ -177,22 +177,64 @@ const AddTransaction = () => {
   };
 
   const handleParsedVoice = (text: string) => {
-    const parsed = parseVoiceTransaction(text);
-    console.log('[VoiceEntry] Parsed amount:', parsed.amount);
-    console.log('[VoiceEntry] Parsed category:', parsed.category);
-    console.log('[VoiceEntry] Parsed type:', parsed.type);
+    const multi = parseMultipleVoiceTransactions(text);
+    console.log('[VoiceEntry] Multi-parsed count:', multi.length);
 
-    if (!parsed.amount || !parsed.type || !parsed.category) {
+    if (multi.length === 0) {
+      const single = parseVoiceTransaction(text);
       const missing = [
-        !parsed.amount && 'amount',
-        !parsed.type && 'type',
-        !parsed.category && 'category',
+        !single.amount && 'amount',
+        !single.type && 'type',
+        !single.category && 'category',
       ].filter(Boolean).join(', ');
-      toast.error(`Could not detect ${missing}. Please try again — say something like "spent 500 on food".`);
+      toast.error(`Could not detect ${missing}. Try "spent 500 on food" or "spent 300 on food and 150 on petrol".`);
       setVoiceText('');
       return;
     }
-    setVoiceConfirm(parsed);
+
+    if (multi.length === 1) {
+      setVoiceConfirm(multi[0]);
+    } else {
+      setMultiConfirm(multi);
+    }
+  };
+
+  const confirmMulti = async () => {
+    if (!multiConfirm || !defaultAccount) return;
+    setSavingMulti(true);
+    let saved = 0;
+    try {
+      for (const tx of multiConfirm) {
+        const cat = categories.find(c => c.name.toLowerCase() === tx.category!.toLowerCase() && c.type === tx.type);
+        if (!cat) continue;
+        await addTx.mutateAsync({
+          account_id: defaultAccount.id,
+          category_id: cat.id,
+          amount: tx.amount!,
+          type: tx.type!,
+          description: tx.description,
+          notes: '',
+          date: format(new Date(), 'yyyy-MM-dd'),
+        });
+        saved++;
+      }
+      incrementUsage.mutate('voice_entries_used');
+      toast.success(`Saved ${saved} transactions!`);
+      setMultiConfirm(null);
+      setVoiceText('');
+      navigate('/transactions');
+    } catch {
+      toast.error(`Saved ${saved} of ${multiConfirm.length}. Some failed — please retry.`);
+    } finally {
+      setSavingMulti(false);
+    }
+  };
+
+  const removeMultiItem = (idx: number) => {
+    if (!multiConfirm) return;
+    const next = multiConfirm.filter((_, i) => i !== idx);
+    if (next.length === 0) { setMultiConfirm(null); return; }
+    setMultiConfirm(next);
   };
 
   const confirmVoice = () => {
