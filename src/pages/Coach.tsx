@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, Send, Loader2, Sparkles, MessageSquare, Clock, Trash2 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,12 +10,31 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useFinance';
 import { cn } from '@/lib/utils';
+import { CoachMessageBody } from '@/components/CoachMiniBars';
 
 type Msg = { id: string; role: 'user' | 'assistant'; content: string };
 type SavedConvo = { id: string; title: string; updatedAt: number; messages: Msg[] };
 
 const STORAGE_KEY = 'spend-wisely:coach-conversation';
 const HISTORY_KEY = 'spend-wisely:coach-history';
+
+const STUDENT_SUGGESTIONS = [
+  'Where did my pocket money go this month?',
+  'How much should I save from my stipend?',
+  'Am I overspending on food?',
+  'How do I start a placement savings goal?',
+  'What SIP amount fits a student budget?',
+  'Give me 3 ways to cut spending this week.',
+];
+
+const PRO_SUGGESTIONS = [
+  'Where did my money go this month?',
+  'Am I saving enough for my age?',
+  'Can I afford my current goal?',
+  'What category am I overspending in?',
+  'How much should I invest every month?',
+  'How do I improve my financial score?',
+];
 
 const DEFAULT_SUGGESTIONS = [
   'Where did my money go this month?',
@@ -104,7 +122,7 @@ const Coach = () => {
     try { localStorage.setItem(HISTORY_KEY, JSON.stringify(next)); } catch {}
   };
 
-  const suggestions = DEFAULT_SUGGESTIONS;
+  const suggestions = profile?.student_mode ? STUDENT_SUGGESTIONS : PRO_SUGGESTIONS;
   const recentTopics = useMemo(
     () => messages.filter(m => m.role === 'user').slice(-5).reverse(),
     [messages]
@@ -216,9 +234,7 @@ const Coach = () => {
                         : 'text-foreground'
                     )}>
                       {m.role === 'assistant' ? (
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown>{m.content}</ReactMarkdown>
-                        </div>
+                        <CoachMessageBody content={m.content} />
                       ) : (
                         <p className="whitespace-pre-wrap">{m.content}</p>
                       )}

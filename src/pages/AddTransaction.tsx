@@ -17,7 +17,7 @@ import { useCategories, useAccounts, useAddTransaction, useUsageLimits, useIncre
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { parseVoiceTransaction, type ParsedVoiceTx } from '@/lib/parseVoiceTransaction';
+import { parseVoiceTransaction, parseMultipleVoiceTransactions, type ParsedVoiceTx } from '@/lib/parseVoiceTransaction';
 
 const formatAmountDisplay = (val: string) => {
   const num = parseFloat(val);
@@ -50,8 +50,10 @@ const AddTransaction = () => {
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef<string>('');
 
-  // Voice confirmation
+  // Voice confirmation (single or multi)
   const [voiceConfirm, setVoiceConfirm] = useState<ParsedVoiceTx | null>(null);
+  const [multiConfirm, setMultiConfirm] = useState<ParsedVoiceTx[] | null>(null);
+  const [savingMulti, setSavingMulti] = useState(false);
 
   // Receipt state
   const [receiptParsing, setReceiptParsing] = useState(false);
@@ -175,22 +177,64 @@ const AddTransaction = () => {
   };
 
   const handleParsedVoice = (text: string) => {
-    const parsed = parseVoiceTransaction(text);
-    console.log('[VoiceEntry] Parsed amount:', parsed.amount);
-    console.log('[VoiceEntry] Parsed category:', parsed.category);
-    console.log('[VoiceEntry] Parsed type:', parsed.type);
+    const multi = parseMultipleVoiceTransactions(text);
+    console.log('[VoiceEntry] Multi-parsed count:', multi.length);
 
-    if (!parsed.amount || !parsed.type || !parsed.category) {
+    if (multi.length === 0) {
+      const single = parseVoiceTransaction(text);
       const missing = [
-        !parsed.amount && 'amount',
-        !parsed.type && 'type',
-        !parsed.category && 'category',
+        !single.amount && 'amount',
+        !single.type && 'type',
+        !single.category && 'category',
       ].filter(Boolean).join(', ');
-      toast.error(`Could not detect ${missing}. Please try again — say something like "spent 500 on food".`);
+      toast.error(`Could not detect ${missing}. Try "spent 500 on food" or "spent 300 on food and 150 on petrol".`);
       setVoiceText('');
       return;
     }
-    setVoiceConfirm(parsed);
+
+    if (multi.length === 1) {
+      setVoiceConfirm(multi[0]);
+    } else {
+      setMultiConfirm(multi);
+    }
+  };
+
+  const confirmMulti = async () => {
+    if (!multiConfirm || !defaultAccount) return;
+    setSavingMulti(true);
+    let saved = 0;
+    try {
+      for (const tx of multiConfirm) {
+        const cat = categories.find(c => c.name.toLowerCase() === tx.category!.toLowerCase() && c.type === tx.type);
+        if (!cat) continue;
+        await addTx.mutateAsync({
+          account_id: defaultAccount.id,
+          category_id: cat.id,
+          amount: tx.amount!,
+          type: tx.type!,
+          description: tx.description,
+          notes: '',
+          date: format(new Date(), 'yyyy-MM-dd'),
+        });
+        saved++;
+      }
+      incrementUsage.mutate('voice_entries_used');
+      toast.success(`Saved ${saved} transactions!`);
+      setMultiConfirm(null);
+      setVoiceText('');
+      navigate('/transactions');
+    } catch {
+      toast.error(`Saved ${saved} of ${multiConfirm.length}. Some failed — please retry.`);
+    } finally {
+      setSavingMulti(false);
+    }
+  };
+
+  const removeMultiItem = (idx: number) => {
+    if (!multiConfirm) return;
+    const next = multiConfirm.filter((_, i) => i !== idx);
+    if (next.length === 0) { setMultiConfirm(null); return; }
+    setMultiConfirm(next);
   };
 
   const confirmVoice = () => {
@@ -519,6 +563,45 @@ const AddTransaction = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Multi-transaction confirmation */}
+        <Dialog open={!!multiConfirm} onOpenChange={(o) => !o && !savingMulti && setMultiConfirm(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="font-heading">Confirm {multiConfirm?.length ?? 0} transactions</DialogTitle>
+              <DialogDescription>Review each detected entry. Remove any you don't want, then save all.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+              {multiConfirm?.map((tx, i) => (
+                <div key={i} className="rounded-lg border border-border p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={cn('text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded',
+                        tx.type === 'income' ? 'bg-success/15 text-success' : 'bg-destructive/15 text-destructive'
+                      )}>{tx.type}</span>
+                      <span className="text-sm font-medium">{tx.category}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">"{tx.raw}"</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-heading font-bold">₹{tx.amount?.toLocaleString('en-IN')}</span>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeMultiItem(i)} disabled={savingMulti}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="ghost" onClick={() => setMultiConfirm(null)} disabled={savingMulti}>Cancel</Button>
+              <Button className="gradient-primary" onClick={confirmMulti} disabled={savingMulti}>
+                {savingMulti ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</> : `Save all ${multiConfirm?.length ?? 0}`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+
 
       </div>
     </AppLayout>
