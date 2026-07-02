@@ -88,9 +88,7 @@ export function parseVoiceTransaction(rawInput: string): ParsedVoiceTx {
   let type = detectType(raw);
   const category = detectCategory(raw);
 
-  // If category implies income (Salary/Freelance) and type missing, default to income
   if (!type && (category === 'Salary' || category === 'Freelance')) type = 'income';
-  // If amount present and still no type, default to expense
   if (!type && amount !== null) type = 'expense';
 
   const description = category || (raw.length > 0 ? raw.slice(0, 40) : '');
@@ -98,4 +96,39 @@ export function parseVoiceTransaction(rawInput: string): ParsedVoiceTx {
   const parsed: ParsedVoiceTx = { amount, type, category, description, raw };
   console.log('[VoiceParser] Parsed:', parsed);
   return parsed;
+}
+
+// Split a raw transcript into multiple sub-transactions on "and/&/then/plus/,".
+// Carries the leading verb ("spent"/"earned") into later chunks that omit it.
+export function parseMultipleVoiceTransactions(rawInput: string): ParsedVoiceTx[] {
+  const raw = (rawInput || '').trim();
+  if (!raw) return [];
+
+  const chunks = raw
+    .split(/\s+(?:and|&|then|plus|,)\s+/i)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  let lastType: 'income' | 'expense' | null = null;
+  const results: ParsedVoiceTx[] = [];
+
+  for (const original of chunks) {
+    let chunk = original;
+    const hasVerb = /(spent|paid|bought|earned|received|got|purchased|debited|credited)/i.test(chunk);
+    if (!hasVerb && lastType) {
+      chunk = (lastType === 'income' ? 'received ' : 'spent ') + chunk;
+    }
+    const parsed = parseVoiceTransaction(chunk);
+    if (parsed.amount && parsed.type && parsed.category) {
+      results.push(parsed);
+      lastType = parsed.type;
+    }
+  }
+
+  if (results.length === 0) {
+    const single = parseVoiceTransaction(raw);
+    if (single.amount && single.type && single.category) return [single];
+    return [];
+  }
+  return results;
 }
