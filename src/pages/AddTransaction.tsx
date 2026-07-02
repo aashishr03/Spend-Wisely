@@ -564,6 +564,45 @@ const AddTransaction = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Multi-transaction confirmation */}
+        <Dialog open={!!multiConfirm} onOpenChange={(o) => !o && !savingMulti && setMultiConfirm(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="font-heading">Confirm {multiConfirm?.length ?? 0} transactions</DialogTitle>
+              <DialogDescription>Review each detected entry. Remove any you don't want, then save all.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+              {multiConfirm?.map((tx, i) => (
+                <div key={i} className="rounded-lg border border-border p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={cn('text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded',
+                        tx.type === 'income' ? 'bg-success/15 text-success' : 'bg-destructive/15 text-destructive'
+                      )}>{tx.type}</span>
+                      <span className="text-sm font-medium">{tx.category}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">"{tx.raw}"</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-heading font-bold">₹{tx.amount?.toLocaleString('en-IN')}</span>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeMultiItem(i)} disabled={savingMulti}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="ghost" onClick={() => setMultiConfirm(null)} disabled={savingMulti}>Cancel</Button>
+              <Button className="gradient-primary" onClick={confirmMulti} disabled={savingMulti}>
+                {savingMulti ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</> : `Save all ${multiConfirm?.length ?? 0}`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+
+
       </div>
     </AppLayout>
   );
