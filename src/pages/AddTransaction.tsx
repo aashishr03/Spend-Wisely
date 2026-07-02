@@ -50,8 +50,10 @@ const AddTransaction = () => {
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef<string>('');
 
-  // Voice confirmation
+  // Voice confirmation (single or multi)
   const [voiceConfirm, setVoiceConfirm] = useState<ParsedVoiceTx | null>(null);
+  const [multiConfirm, setMultiConfirm] = useState<ParsedVoiceTx[] | null>(null);
+  const [savingMulti, setSavingMulti] = useState(false);
 
   // Receipt state
   const [receiptParsing, setReceiptParsing] = useState(false);
